@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<node>
+    <interface name="org.mokosuite.Settings">
+        <method name="GetSetting">
+            <arg type="s" name="key" direction="in" />
+            <arg type="s" name="default" direction="in" />
+            <arg type="s" name="str_ret" direction="out" />
+        </method>
+        <method name="GetAllSettings">
+            <arg type="a{ss}" name="values" direction="out" />
+        </method>
+        <method name="SetSetting">
+            <arg type="s" name="key" direction="in" />
+            <arg type="s" name="value" direction="in" />
+        </method>
+    </interface>
+</node>

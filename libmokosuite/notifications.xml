@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<node>
+    <interface name="org.mokosuite.Notifications">
+        <method name="PushNotification">
+            <arg type="s" name="text" direction="in" />
+            <arg type="s" name="icon" direction="in" />
+            <arg type="i" name="type" direction="in" />
+            <arg type="i" name="flags" direction="in" />
+            <arg type="i" name="notification_id" direction="out" />
+        </method>
+        <method name="RemoveNotification">
+            <arg type="i" name="notification_id" direction="in" />
+        </method>
+    </interface>
+</node>

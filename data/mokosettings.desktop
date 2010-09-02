@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Settings
+Name[it]=Impostazioni
+Comment=Mokosuite settings
+StartupNotify=true
+Exec=mokosettings
+Terminal=false
+Type=Application
+Categories=Utility;
+Icon=shr-settings

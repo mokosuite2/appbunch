@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# FIXME temporary workaround
+prefix=@prefix@
+ln -s @datarootdir@/mokosuite/themes/gry.edj @datarootdir@/mokosuite/theme.edj
+mkdir @sysconfdir@/mokosuite
+# FIXME temporary workaround
+
+xmodmap @sysconfdir@/X11/xmodmap/mokosuite.xmodmap
+#(while [ 1 = 1 ]; do sleep 20 &&
+#. /etc/pointercal.xinput; done) &
+
+(sleep 5; mokopanel >/dev/null 2>&1) &
+mokohome >/dev/null 2>&1 &
+mokophone >/dev/null 2>&1 &
+(sleep 5; xset r off) &
+mokowm >/dev/null 2>&1

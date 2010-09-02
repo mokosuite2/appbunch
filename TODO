@@ -1,0 +1,17 @@
+Phone:
+ * Metodi accessori calls database e contacts database
+ * Gestione contatti
+ * Migliorare interfaccia logentry
+ * gestione chiamate + conferenza
+ * interfaccia pubblica Phone
+
+Suite:
+ * gettext
+
+Autotools/Packaging:
+ * dividere le applicazioni o mantenere una base comune?
+  - dati comuni ?-? dati specifici
+  - libmokosuite
+  - mokophone
+  - mokopanel
+  - ecc.

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<node>
+  <interface name="org.bluez.Manager">
+    <method name="DefaultAdapter">
+      <arg type="o" direction="out"/>
+    </method>
+
+    <method name="FindAdapter">
+      <arg type="s" name="pattern"/>
+      <arg type="o" direction="out"/>
+    </method>
+
+    <method name="ListAdapters">
+      <arg type="ao" direction="out"/>
+    </method>
+
+    <signal name="DefaultAdapterChanged">
+        <arg name="path" type="o"/>
+    </signal>
+
+    <signal name="AdapterRemoved">
+        <arg name="path" type="o"/>
+    </signal>
+  </interface>
+
+  <interface name="org.bluez.Adapter">
+    <method name="GetProperties">
+      <arg type="a{sv}" direction="out"/>
+    </method>
+
+    <method name="GetProperty">
+        <arg name="name" type="s" direction="in"/>
+        <arg name="value" type="v" direction="out"/>
+    </method>
+
+    <method name="SetProperty">
+        <arg name="name" type="s" direction="in"/>
+        <arg name="value" type="v" direction="in"/>
+    </method>
+
+    <method name="ListDevices">
+      <arg type="ao" direction="out"/>
+    </method>
+
+    <method name="StartDiscovery">
+    </method>
+
+    <method name="StopDiscovery">
+    </method>
+
+    <method name="FindDevice">
+        <arg type="s" direction="in" name="address"/>
+        <arg type="o" direction="out" name="object"/>
+    </method>
+
+    <method name="CreateDevice">
+      <arg type="s" direction="in" name="address"/>
+      <arg type="o" direction="out" name="object"/>
+    </method>
+
+    <method name="CreatePairedDevice">
+        <arg type="s" direction="in" name="address"/>
+        <arg type="o" direction="in" name="agent"/>
+        <arg type="s" direction="in" name="capability"/>
+        <arg type="o" direction="out" name="object"/>
+    </method>
+
+    <method name="RemoveDevice">
+      <arg type="o" name="device"/>
+    </method>
+
+    <signal name="PropertyChanged">
+        <arg type="s" name="name"/>
+        <arg type="v" name="value"/>
+    </signal>
+
+    <signal name="DeviceFound">
+        <arg type="s" name="address"/>
+        <arg type="a{sv}" name="values"/>
+    </signal>
+
+    <property name="Name" type="s" access="readwrite"/>
+    <property name="Discoverable" type="b" access="readwrite"/>
+
+  </interface>
+
+  <interface name="org.bluez.Device">
+
+    <method name="GetProperties">
+        <arg type="a{sv}" direction="out"/>
+    </method>
+    
+    <method name="GetProperty">
+        <arg name="name" type="s" direction="in"/>
+        <arg name="value" type="v" direction="out"/>
+    </method>
+
+  </interface>
+
+  <interface name="org.bluez.Headset">
+      <method name="Connect"/>
+      <method name="Disconnect"/>
+      <method name="IndicateCall"/>
+      <method name="CancelCall"/>
+      <method name="Play"/>
+      <method name="Stop"/>
+      <!-- TODO altro... -->
+  </interface>
+
+  <interface name="org.bluez.Agent">
+      <method name="RequestPinCode">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="o" name="device" direction="in"/>
+          <arg type="s" name="pincode" direction="out"/>
+      </method>
+      
+      <method name="RequestPasskey">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="o" name="device" direction="in"/>
+          <arg type="u" name="passkey" direction="out"/>
+      </method>
+      
+      <method name="DisplayPasskey">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="o" name="device" direction="in"/>
+          <arg type="u" name="passkey" direction="in"/>
+          <arg type="y" name="entered" direction="in"/>
+      </method>
+      
+      <method name="RequestConfirmation">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="o" name="device" direction="in"/>
+          <arg type="u" name="passkey" direction="in"/>
+      </method>
+      
+      <method name="Authorize">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="o" name="device" direction="in"/>
+          <arg type="s" name="uuid" direction="in"/>
+      </method>
+      
+      <method name="ConfirmMode">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+          <arg type="s" name="mode" direction="in"/>
+      </method>
+      
+      <method name="Cancel">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+      </method>
+      
+      <method name="Release">
+          <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+      </method>
+  </interface>
+
+</node>

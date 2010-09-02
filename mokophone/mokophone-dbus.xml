@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<node name="/org/mokosuite/Phone">    
+    <interface name="org.mokosuite.Phone">
+        <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="moko_phone"/>
+
+        <!-- metodi -->
+
+        <method name="Frontend">
+            <arg type="s" name="section" direction="in" />
+        </method>
+        <method name="ListUnreadMissedCalls">
+            <arg type="a(xsttb)" name="calls" direction="out" />
+        </method>
+
+        <method name="GetMissedCall">
+            <arg type="x" name="id" direction="in" />
+            <arg type="xsttb" name="call" direction="out" />
+        </method>
+
+        <!-- segnali -->
+
+        <signal name="NewMissedCall">
+            <arg type="xsttb" name="call"/>
+        </signal>
+
+    </interface>
+</node>
