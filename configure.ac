@@ -137,6 +137,17 @@ fi
 AM_CONDITIONAL(ENABLE_QVGA, test "x$enable_qvga" = "xyes")
 AC_SUBST(SCALE_FACTOR)
 
+AC_ARG_ENABLE(settings_config,
+    AC_HELP_STRING([--enable-settings-config], [Enable mokosuite.conf usage as settings storage (default: BerkeleyDB storage)]),
+    enable_settings_config=$enableval,
+    enable_settings_config=no)
+
+if test "x$enable_settings_config" != "xno"; then
+    AC_DEFINE(SETTINGSDB_CFG, 1, [Define to enable mokosuite.conf usage as settings storage])
+fi
+
+AM_CONDITIONAL(ENABLE_SETTINGS_CONFIG, test "x$enable_settings_config" = "xyes")
+
 AC_ARG_ENABLE(callsdb_sqlite,
     AC_HELP_STRING([--enable-callsdb-sqlite], [Enable SQLite usage for calls database (default: disabled)]),
     enable_callsdb_sqlite=$enableval,
