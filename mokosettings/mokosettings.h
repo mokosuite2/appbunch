@@ -2,7 +2,7 @@
 #define __MOKOSETTINGSAPP_H
 
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
 
 #define DBUS_PANEL_SERVICE               "org.mokosuite.panel"
 #define DBUS_PANEL_SETTINGS_PATH    "/org/mokosuite/Panel/Settings"

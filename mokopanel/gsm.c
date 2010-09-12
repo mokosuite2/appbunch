@@ -21,14 +21,12 @@
 #include <Elementary.h>
 #include <glib.h>
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
 #include <libmokosuite/misc.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged-dbus.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-dbus.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-network.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-device.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-sim.h>
+#include <freesmartphone-glib/odeviced/powersupply.h>
+#include <freesmartphone-glib/ousaged/usage.h>
+#include <freesmartphone-glib/ogsmd/network.h>
+#include <freesmartphone-glib/ogsmd/device.h>
+#include <freesmartphone-glib/ogsmd/sim.h>
 
 #include "panel.h"
 #include "gsm.h"
@@ -43,8 +41,6 @@
 //#define SEGV_ADDRESS    0x10
 #define SEGV_ADDRESS    0xbfff0000
 #endif
-
-static FrameworkdHandler fsoHandlers = {0};
 
 // lista applet gsm
 static GPtrArray* gsm_applets = NULL;

@@ -3,10 +3,6 @@
 
 #include <libmokosuite/mokosuite.h>
 #include <libmokosuite/gui.h>
-#include <libmokosuite/fso.h>
-
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-display.h>
 
 #include "menu-common.h"
 #include "menu-sounds.h"

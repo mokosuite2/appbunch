@@ -2,7 +2,7 @@
 #include <glib.h>
 
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
+#include <freesmartphone-glib/ousaged/usage.h>
 
 #define EGG_DBUS_I_KNOW_API_IS_SUBJECT_TO_CHANGE
 #include <libmokosuite/bluetooth-client.h>
@@ -28,6 +28,8 @@ static MenuItem* ex_bluetooth = NULL;
 static MenuItem* sw_visible = NULL;
 static MenuItem* sw_devname = NULL;
 
+static gboolean fso_signals_attached = FALSE;
+
 static bluezManager* bt_manager = NULL;
 static bluezAdapter* bt_adapter = NULL;
 static BluetoothAgentService* bt_agent = NULL;
@@ -36,8 +38,6 @@ static char* bt_devname = NULL;
 static gboolean bt_discoverable = FALSE;
 static gboolean bt_discovering = FALSE;
 static GHashTable* bt_devices_found = NULL;
-
-static FrameworkdHandler btHandlers = {0};
 
 static void bt_dbus_connect(void);
 static void bt_dbus_disconnect(void);
@@ -466,12 +466,12 @@ void bt_toggle(gpointer data)
     if (item->checked) {
         bt_toggle_deactivating(NULL);
 
-        ousaged_set_resource_policy(RESOURCE_BLUETOOTH, "auto", bt_policy_set, NULL);
+        ousaged_usage_set_resource_policy(RESOURCE_BLUETOOTH, RESOURCE_POLICY_AUTO, bt_policy_set, NULL);
 
     } else {
         bt_toggle_activating(NULL);
 
-        ousaged_set_resource_policy(RESOURCE_BLUETOOTH, "enabled", bt_policy_set, NULL);
+        ousaged_usage_set_resource_policy(RESOURCE_BLUETOOTH, RESOURCE_POLICY_ENABLED, bt_policy_set, NULL);
     }
 }
 
@@ -513,7 +513,7 @@ static void bt_set_devname(gpointer data)
     // TODO
 }
 
-static void bt_resource_changed (const char *name, gboolean state, GHashTable *attributes)
+static void bt_resource_changed (gpointer data, const char *name, gboolean state, GHashTable *attributes)
 {
     if (!strcmp(name, RESOURCE_BLUETOOTH))
         bt_state(NULL, state, NULL);
@@ -531,15 +531,15 @@ void menu_bluetooth_init_item(MenuItem* item, gboolean extra)
         ex_bluetooth = item;
     }
 
-    if (btHandlers.usageResourceChanged == NULL) {
+    if (!fso_signals_attached) {
         // handler segnali FSO
-        btHandlers.usageResourceChanged = bt_resource_changed;
-        //btHandlers.usageResourceAvailable = usageResourceAvailable;
+        ousaged_usage_resource_changed_connect(bt_resource_changed, NULL);
+        //ousaged_usage_resource_available_connect(usageResourceAvailable, NULL);
 
-        fso_handlers_add(&btHandlers);
+        fso_signals_attached = TRUE;
     }
 
-    ousaged_get_resource_state(RESOURCE_BLUETOOTH, bt_state, NULL);
+    ousaged_usage_get_resource_state(RESOURCE_BLUETOOTH, bt_state, NULL);
 }
 
 void menu_bluetooth_init(void)

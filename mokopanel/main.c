@@ -21,14 +21,13 @@
 #include <stdlib.h>
 #include <Elementary.h>
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
 #include <libmokosuite/settings-service.h>
 #include <libmokosuite/notifications.h>
 
 #include <dbus/dbus-glib-bindings.h>
 
-#include <frameworkd-glib/frameworkd-glib-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-input.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
+#include <freesmartphone-glib/odeviced/input.h>
 
 #define MOKO_PANEL_NAME             "org.mokosuite.panel"
 #define MOKO_PANEL_SETTINGS_PATH    "/org/mokosuite/Panel/Settings"
@@ -158,7 +157,7 @@ int main(int argc, char* argv[])
     panel_settings = moko_settings_service_new(MOKO_PANEL_SETTINGS_PATH, db_path, "panel");
     g_free(db_path);
 
-    fso_init();
+    freesmartphone_glib_init();
 
     elm_theme_overlay_add(NULL, "elm/pager/base/panel");
     elm_theme_overlay_add(NULL, "elm/label/base/panel");

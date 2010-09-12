@@ -20,7 +20,6 @@ mokosuiteinclude_HEADERS = \
 	settings-service.h \
 	settings.h \
 	cfg.h \
-	fso.h \
 	notifications.h \
 	bluetooth-client.h \
 	bluetooth-agent.h \
@@ -68,8 +67,6 @@ libmokosuite_la_SOURCES = $(dbus_sources) $(bt_sources) \
 	settings.h \
 	cfg.c \
 	cfg.h \
-	fso.c \
-	fso.h \
 	bluetooth-client.c \
 	bluetooth-client.h \
 	bluetooth-agent.c \

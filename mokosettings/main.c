@@ -32,9 +32,7 @@ int main(int argc, char *argv[])
     g_debug(PACKAGE " version " VERSION " started");
 
     moko_factory_init(argc, argv, PACKAGE, VERSION);
-
-    // inizializza FSO
-    fso_init();
+    freesmartphone_glib_init();
 
     #if 0
     DBusGProxy *s = moko_settings_connect("org.mokosuite.phone", "/org/mokosuite/Phone/Settings");

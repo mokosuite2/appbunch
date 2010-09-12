@@ -53,7 +53,7 @@ void sim_auth_win_auth_error(SimAuthWin *s)
     const char *instr = NULL;
 
     switch (s->type) {
-        case SIM_PIN_REQUIRED:
+        case SIM_AUTH_STATUS_PIN_REQUIRED:
             instr = "PIN code is incorrect.";
             break;
 
@@ -69,7 +69,7 @@ void sim_auth_win_auth_error(SimAuthWin *s)
     _number_pressed(s, s->keypad_edje, "", "");
 }
 
-SimAuthWin* sim_auth_win_new(SimStatus type)
+SimAuthWin* sim_auth_win_new(SIMAuthStatus type)
 {
     SimAuthWin *s = (SimAuthWin *) mokowin_sized_new("mokoauth", sizeof(SimAuthWin));
 
@@ -119,7 +119,7 @@ SimAuthWin* sim_auth_win_new(SimStatus type)
 
     const char *instr = NULL;
     switch (type) {
-        case SIM_PIN_REQUIRED:
+        case SIM_AUTH_STATUS_PIN_REQUIRED:
             instr = "Enter PIN to unlock SIM card.";
             break;
 

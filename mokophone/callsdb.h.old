@@ -12,7 +12,11 @@ typedef enum
 
 struct _CallEntry {
     /* id chiamata */
+#ifdef CALLSDB_SQLITE
     gint64 id;
+#else
+    guint32 id;
+#endif
 
     /* direzione chiamata */
     CallDirection direction;
@@ -48,18 +52,44 @@ typedef void (*CallEntryFunc)(CallEntry*, gpointer);
 
 void callsdb_foreach_call(CallEntryFunc func, gpointer data);
 
-CallEntry* callsdb_get_call(gint64 id);
+CallEntry* callsdb_get_call(
+#ifdef CALLSDB_SQLITE
+gint64 id
+#else
+guint32 id
+#endif
+);
 
-gint64 callsdb_new_call(CallDirection direction, const char* peer,
+#ifdef CALLSDB_SQLITE
+gint64
+#else
+guint32
+#endif
+callsdb_new_call(CallDirection direction, const char* peer,
     guint64 timestamp, guint64 duration,
     gboolean answered, gboolean is_new);
 
-void callsdb_set_call_new(gint64 id, gboolean is_new);
+void callsdb_set_call_new(
+#ifdef CALLSDB_SQLITE
+gint64 id
+#else
+guint32 id
+#endif
+, gboolean is_new);
 
-gboolean callsdb_delete_call(gint64 id);
+gboolean callsdb_delete_call(
+#ifdef CALLSDB_SQLITE
+gint64 id
+#else
+guint32 id
+#endif
+);
 
-gboolean callsdb_truncate(void);
+void callsdb_truncate(void);
 
-void callsdb_init();
+void callsdb_init(const char *db_path);
+
+extern time_t callsdb_timestamp;
+extern char* callsdb_path;
 
 #endif  /* __CALLSDB_H */

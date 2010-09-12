@@ -8,8 +8,8 @@
 #include <libmokosuite/contactsdb.h>
 #include <libmokosuite/misc.h>
 #include <libmokosuite/notifications.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-dbus.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
+#include <freesmartphone-glib/ogsmd/call.h>
 
 #include <glib/gi18n-lib.h>
 #include <Elementary.h>
@@ -98,9 +98,11 @@ static void _voice_call_callback(GError *error, int call_id, void *data)
         char *errmsg = NULL;
 
         // segnale GSM assente/insufficiente
+        #if 0
         if (IS_CALL_ERROR(error, CALL_ERROR_NO_CARRIER))
             errmsg = "No GSM carrier.";
         else
+        #endif
             errmsg = "Cannot initiate voice call.";
 
         // mostra errore...

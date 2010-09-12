@@ -3,14 +3,14 @@
 
 #include <glib.h>
 #include <libmokosuite/gui.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-sim.h>
+#include <freesmartphone-glib/ogsmd/sim.h>
 
 struct _SimAuthWin {
     /* la finestra -- per il cast a MokoWin */
     MokoWin win;
 
     /* tipo di autenticazione -- cosa stiamo richiedendo */
-    SimStatus type;
+    SIMAuthStatus type;
 
     /* widget vari*/
     Evas_Object* keypad;
@@ -34,6 +34,6 @@ typedef struct _SimAuthWin SimAuthWin;
 void sim_auth_win_auth_error(SimAuthWin *s);
 
 void sim_auth_win_destroy(SimAuthWin *s);
-SimAuthWin* sim_auth_win_new(SimStatus type);
+SimAuthWin* sim_auth_win_new(SIMAuthStatus type);
 
 #endif  /* __SIMAUTHWIN_H */

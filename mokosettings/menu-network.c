@@ -3,7 +3,6 @@
 
 #include <libmokosuite/mokosuite.h>
 #include <libmokosuite/gui.h>
-#include <libmokosuite/fso.h>
 
 #include "menu-common.h"
 #include "menu-network.h"

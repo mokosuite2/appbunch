@@ -4,7 +4,7 @@
 
 #include <libmokosuite/gui.h>
 #include <libmokosuite/notifications.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-network.h>
+#include <freesmartphone-glib/ogsmd/network.h>
 #include <Ecore_X.h>
 
 #include "phonewin.h"

@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <alsa/asoundlib.h>
 
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-audio.h>
+#include <freesmartphone-glib/odeviced/audio.h>
 #include <libmokosuite/mokosuite.h>
 #include <libmokosuite/settings-service.h>
 

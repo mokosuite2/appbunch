@@ -1,13 +1,11 @@
 #include <glib.h>
 #include <string.h>
-#include <frameworkd-glib/frameworkd-glib-dbus.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged-dbus.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-dbus.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-device.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-sim.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-network.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
+#include <freesmartphone-glib/ousaged/usage.h>
+#include <freesmartphone-glib/ogsmd/device.h>
+#include <freesmartphone-glib/ogsmd/sim.h>
+#include <freesmartphone-glib/ogsmd/call.h>
+#include <freesmartphone-glib/ogsmd/network.h>
 
 #include "gsm.h"
 #include "simauthwin.h"
@@ -19,7 +17,6 @@
 
 static SimAuthWin *sim_auth = NULL;
 
-static FrameworkdHandler* gsmHandlers = NULL;
 static gboolean gsm_available = FALSE;
 static gboolean gsm_ready = FALSE;
 static gboolean sim_ready = FALSE;
@@ -33,11 +30,10 @@ static gboolean list_resources(gpointer data);
 static gboolean register_network(gpointer data);
 
 // eh...
-static void network_status(GHashTable *status);
+static void network_status(gpointer data, GHashTable *status);
 static void _get_network_status_callback(GError * error, GHashTable * status, gpointer data);
 
-static void sim_ready_actions(void);
-static void sim_auth_show(SimStatus type);
+static void sim_auth_show(SIMAuthStatus type);
 static void sim_auth_hide(void);
 static void sim_auth_error(void);
 
@@ -46,7 +42,7 @@ static void _request_resource_callback(GError * error, gpointer userdata)
     // nessun errore -- tocca a ResourceChanged
     if (error == NULL) return;
 
-    if (IS_USAGE_ERROR(error, USAGE_ERROR_USER_EXISTS)) {
+    if (FREESMARTPHONE_GLIB_IS_USAGE_ERROR(error, USAGE_ERROR_USER_EXISTS)) {
         g_message("GSM has already been requested.");
         return;
     }
@@ -99,7 +95,7 @@ static void _register_to_network_callback(GError * error, gpointer userdata)
 static void _get_network_status_callback(GError * error, GHashTable * status, gpointer data)
 {
     if (!error)
-        network_status(status);
+        network_status(NULL, status);
 
     else
         _register_to_network_callback(error, data);
@@ -112,22 +108,22 @@ static void _sim_get_auth_status_callback(GError *error, int status, gpointer da
 
     /* if no SIM is present inform the user about it and
      * stop retrying to authenticate the SIM */
-    if (IS_SIM_ERROR(error, SIM_ERROR_NOT_PRESENT)) {
+    if (FREESMARTPHONE_GLIB_IS_GSM_ERROR(error, GSM_ERROR_SIM_NOT_PRESENT)) {
         g_message("SIM card not present.");
         // TODO
         return;
     }
 
     /* altri errori o stato sconosciuto, riprova tra 5s */
-    if (error || status == SIM_UNKNOWN) {
+    if (error || status == SIM_AUTH_STATUS_UNKNOWN) {
         g_debug("Error: %s", error->message);
         g_timeout_add(5000, get_auth_status, NULL);
         return;
     }
 
-    if (status != SIM_READY) {
+    if (status != SIM_AUTH_STATUS_READY) {
         g_debug("SIM authentication started");
-        sim_auth_show(SIM_PIN_REQUIRED);
+        sim_auth_show(SIM_AUTH_STATUS_PIN_REQUIRED);
         return;
     }
 
@@ -151,7 +147,7 @@ static gboolean request_gsm(gpointer data)
 {
     if (gsm_available) {
         g_debug("Request GSM resource");
-        ousaged_request_resource("GSM", _request_resource_callback, NULL);
+        ousaged_usage_request_resource("GSM", _request_resource_callback, NULL);
     }
 
     return FALSE;
@@ -200,23 +196,15 @@ static gboolean register_network(gpointer data)
 
 static gboolean list_resources(gpointer data)
 {
-    ousaged_list_resources(_list_resources_callback, NULL);
+    ousaged_usage_list_resources(_list_resources_callback, NULL);
     return FALSE;
-}
-
-/* chiamata quando la SIM e' pronta */
-static void sim_ready_actions(void) {
-    g_debug("SIM is ready!");
-    sim_ready = TRUE;
-
-    sim_auth_hide();
 }
 
 static void _pin_ok(void *simauth, const char *code) {
     SimAuthWin *s = SIMAUTH_WIN(simauth);
 
     switch (s->type) {
-        case SIM_PIN_REQUIRED:
+        case SIM_AUTH_STATUS_PIN_REQUIRED:
             moko_popup_status_activate(s->status, _("Checking..."));
             ogsmd_sim_send_auth_code(code, _sim_send_auth_callback, NULL);
 
@@ -228,7 +216,7 @@ static void _pin_ok(void *simauth, const char *code) {
     }
 }
 
-static void sim_auth_show(SimStatus type)
+static void sim_auth_show(SIMAuthStatus type)
 {
     if (sim_auth == NULL) {
         sim_auth = sim_auth_win_new(type);
@@ -263,7 +251,7 @@ static void offline_mode_changed(MokoSettingsService *settings, const char* key,
 /* -- SIGNAL HANDLERS -- */
 
 /* Usage.ResourceChanged signal */
-static void resource_changed (const char *name, gboolean state, GHashTable *attributes)
+static void resource_changed (gpointer data, const char *name, const gboolean state, GHashTable *attributes)
 {
     g_debug("Resource changed: %s (%d, current gsm_ready = %d)", name, state, gsm_ready);
     if (!strcmp(name, "GSM")) {
@@ -285,7 +273,7 @@ static void resource_changed (const char *name, gboolean state, GHashTable *attr
 }
 
 /* Usage.ResourceAvailable signal */
-static void resource_available(const char *name, gboolean available)
+static void resource_available(gpointer data, const char *name, gboolean available)
 {
     g_debug("resource %s is %s", name, available ? "now available" : "gone");
     if (!strcmp(name, "GSM")) {
@@ -295,45 +283,30 @@ static void resource_available(const char *name, gboolean available)
     }
 }
 
-/* GSM.SimReadyStatus */
-static void sim_ready_status(gboolean ready)
-{
-    /* La SIM era gia' pronta (dal segnale ReadyStatus) */
-    if (sim_ready) {
-        g_debug("SIM was already ready, checking registration status...");
-        ogsmd_network_get_status(_get_network_status_callback, NULL);
-        return;
-    }
-
-    g_debug("SimReadyStatus: ready %d", ready);
-    if (ready)
-        sim_ready_actions();
-}
-
 /* GSM.SimAuthStatus */
-static void sim_auth_status(const int status)
+static void sim_auth_status(gpointer data, const int status)
 {
-    if (status == SIM_READY) {
+    if (status == SIM_AUTH_STATUS_READY) {
         sim_auth_hide();
         register_network(NULL);
     }
 }
 
 /* GSM.CallStatus */
-static void call_status(const int id, const int status, GHashTable* properties)
+static void call_status(gpointer data, int id, int status, GHashTable* properties)
 {
     // :)
     phone_call_win_call_status(id, status, properties);
 }
 
 /* GSM.IncomingUssd */
-static void incoming_ussd(int mode, const char* message)
+static void incoming_ussd(gpointer data, int mode, const char* message)
 {
     phone_win_ussd_reply(mode, message);
 }
 
 /* GSM.NetworkStatus */
-static void network_status(GHashTable *status)
+static void network_status(gpointer data, GHashTable *status)
 {
     if (!status) {
         g_debug("got no status from NetworkStatus?!");
@@ -372,9 +345,10 @@ static void network_status(GHashTable *status)
 }
 
 /* GSM.DeviceStatus */
-static void gsm_device_status(const int status)
+static void gsm_device_status(gpointer data, const int status)
 {
     // TODO
+    // TODO per sim ready aaaaaahhhh!!!! :-o
 }
 
 /* -- funzioni pubbliche -- */
@@ -403,43 +377,38 @@ void gsm_offline(void)
 
 void gsm_init(MokoSettingsService *settings)
 {
-    gsmHandlers = frameworkd_handler_new();
-    gsmHandlers->usageResourceChanged = resource_changed;
-    gsmHandlers->usageResourceAvailable = resource_available;
-    gsmHandlers->simReadyStatus = sim_ready_status;
-    gsmHandlers->gsmDeviceStatus = gsm_device_status;
-    gsmHandlers->simAuthStatus = sim_auth_status;
-    gsmHandlers->callCallStatus = call_status;
-    gsmHandlers->incomingUssd = incoming_ussd;
-    gsmHandlers->networkStatus = network_status;
+    ousaged_usage_resource_changed_connect(resource_changed, NULL);
+    ousaged_usage_resource_available_connect(resource_available, NULL);
+    ogsmd_device_device_status_connect(gsm_device_status, NULL);
+    ogsmd_sim_auth_status_connect(sim_auth_status, NULL);
+    ogsmd_call_call_status_connect(call_status, NULL);
+    ogsmd_network_incoming_ussd_connect(incoming_ussd, NULL);
+    ogsmd_network_status_connect(network_status, NULL);
 
-    // connetti i segnali
-    frameworkd_handler_connect(gsmHandlers);
+    ousaged_usage_dbus_connect();
 
-    dbus_connect_to_ousaged();
-
-    if (ousagedBus == NULL) {
+    if (ousagedUsageBus == NULL) {
         g_error("Cannot connect to ousaged. Exiting");
         return;
     }
 
-    dbus_connect_to_ogsmd_device();
+    ogsmd_device_dbus_connect();
 
-    if (deviceBus == NULL) {
+    if (ogsmdDeviceBus == NULL) {
         g_error("Cannot connect to ogsmd (device). Exiting");
         return;
     }
 
-    dbus_connect_to_ogsmd_sim();
+    ogsmd_sim_dbus_connect();
 
-    if (simBus == NULL) {
+    if (ogsmdSimBus == NULL) {
         g_error("Cannot connect to ogsmd (sim). Exiting");
         return;
     }
 
-    dbus_connect_to_ogsmd_call();
+    ogsmd_call_dbus_connect();
 
-    if (callBus == NULL) {
+    if (ogsmdCallBus == NULL) {
         g_error("Cannot connect to ogsmd (call). Exiting");
         return;
     }

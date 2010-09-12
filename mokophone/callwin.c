@@ -5,13 +5,13 @@
 #include <libmokosuite/gui.h>
 #include <libmokosuite/misc.h>
 #include <libmokosuite/settings-service.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-idlenotifier.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-vibrator.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-audio.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-led.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
+#include <freesmartphone-glib/ogsmd/call.h>
+#include <freesmartphone-glib/ousaged/usage.h>
+#include <freesmartphone-glib/odeviced/idlenotifier.h>
+#include <freesmartphone-glib/odeviced/vibrator.h>
+#include <freesmartphone-glib/odeviced/audio.h>
+#include <freesmartphone-glib/odeviced/led.h>
 
 #include "callwin.h"
 #include "callblock.h"
@@ -160,7 +160,7 @@ static PhoneCallBlock* append_callblock(const char *peer, int id, gboolean outgo
         elm_box_pack_start(win->vbox, b->widget);
 
         // prima chiamata aggiunta, occupa CPU
-        ousaged_request_resource("CPU", NULL, NULL);
+        ousaged_usage_request_resource("CPU", NULL, NULL);
     }
 
     return b;
@@ -286,7 +286,7 @@ void phone_call_win_call_remove(PhoneCallBlock* call)
         sound_state_set(SOUND_STATE_IDLE);
         sound_headset_presence_callback(NULL);
 
-        ousaged_release_resource("CPU", NULL, NULL);
+        ousaged_usage_release_resource("CPU", NULL, NULL);
 
         sound_volume_mute_set(CONTROL_MICROPHONE, 1);
         elm_button_label_set(bt_mute, _("Mute"));
@@ -295,7 +295,7 @@ void phone_call_win_call_remove(PhoneCallBlock* call)
 
         elm_button_label_set(bt_speaker, _("Speaker"));
 
-        odeviced_idle_notifier_set_state(DEVICE_IDLE_STATE_PRELOCK, NULL, NULL);
+        odeviced_idlenotifier_set_state(IDLE_STATE_IDLE_PRELOCK, NULL, NULL);
     }
 
     // rimuovi la chiamata -- sara' distrutto tutto automaticamente
@@ -320,13 +320,13 @@ void phone_call_win_outgoing_call(const char* peer)
 }
 
 /* richiamato da gsm.c */
-void phone_call_win_call_status(const int id, const CallStatus status, GHashTable* properties)
+void phone_call_win_call_status(int id, CallStatus status, GHashTable* properties)
 {
     g_return_if_fail(win != NULL && properties != NULL);
     g_debug("[PhoneCallWin/%d] Call status (only incoming): status=%d", id, status);
 
-    const char *reason = fso_get_attribute(properties, DBUS_CALL_PROPERTIES_REASON);
-    const char *number = fso_get_attribute(properties, DBUS_CALL_PROPERTIES_NUMBER);
+    const char *reason = fso_get_attribute(properties, "reason");
+    const char *number = fso_get_attribute(properties, "number");
     int i;
 
     // mmm...
@@ -440,7 +440,7 @@ void phone_call_win_init(MokoSettingsService *settings)
 
     sound_set_mute_pointer(&current_mute_status);
 
-    dbus_connect_to_odeviced_vibrator();
+    odeviced_vibrator_dbus_connect();
 
     if (odevicedVibratorBus == NULL)
         g_critical("Cannot connect to odeviced (vibrator). Will not be able to vibrate on incoming call");

@@ -4,7 +4,7 @@
 #include "callblock.h"
 
 #include <glib.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
+#include <freesmartphone-glib/ogsmd/call.h>
 #include <libmokosuite/settings-service.h>
 
 #define CALL_NOTIFICATION_SOUND         "call_notification_sound"
@@ -16,7 +16,7 @@ int phone_call_win_num_calls(void);
 void phone_call_win_outgoing_call(const char* peer);
 
 void phone_call_win_call_remove(PhoneCallBlock* call);
-void phone_call_win_call_status(const int id, const CallStatus status, GHashTable* properties);
+void phone_call_win_call_status(int id, CallStatus status, GHashTable* properties);
 
 void phone_call_win_activate(void);
 void phone_call_win_hide(void);

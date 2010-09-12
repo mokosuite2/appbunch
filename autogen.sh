@@ -10,4 +10,4 @@ autoreconf -v --install || exit 1
 intltoolize -c --automake --force || exit 1
 cd $ORIGDIR || exit $?
 
-$srcdir/configure --enable-callsdb-sqlite --enable-contactsdb-sqlite "$@"
+$srcdir/configure --enable-callsdb-sqlite --enable-contactsdb-sqlite --enable-settings-config "$@"

@@ -2,7 +2,7 @@
 #define __CALLBLOCK_H
 
 #include <glib.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
+#include <freesmartphone-glib/ogsmd/call.h>
 #include <Evas.h>
 
 #include <libmokosuite/gui.h>

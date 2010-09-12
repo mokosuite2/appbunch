@@ -24,13 +24,11 @@
 #include <glib.h>
 #include <libmokosuite/mokosuite.h>
 #include <libmokosuite/settings-service.h>
-#include <libmokosuite/fso.h>
 #include <libmokosuite/misc.h>
 #include <libmokosuite/notifications.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-idlenotifier.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-dbus.h>
-#include <frameworkd-glib/ogsmd/frameworkd-glib-ogsmd-call.h>
+#include <freesmartphone-glib/odeviced/idlenotifier.h>
+#include <freesmartphone-glib/ogsmd/call.h>
+#include <freesmartphone-glib/ousaged/usage.h>
 
 #include "panel.h"
 #include "idle.h"
@@ -101,7 +99,7 @@ static void call_status(gpointer data, const int id, const int status, GHashTabl
                 screensaver_off();
 
                 // richiedi display
-                ousaged_request_resource("Display", NULL, NULL);
+                ousaged_usage_request_resource("Display", NULL, NULL);
             }
 
             // disabilita idle screen
@@ -109,7 +107,7 @@ static void call_status(gpointer data, const int id, const int status, GHashTabl
             break;
 
         case CALL_STATUS_ACTIVE:
-            ousaged_release_resource("Display", NULL, NULL);
+            ousaged_usage_release_resource("Display", NULL, NULL);
 
             break;
 
@@ -122,7 +120,7 @@ static void call_status(gpointer data, const int id, const int status, GHashTabl
                 }
             }
 
-            ousaged_release_resource("Display", NULL, NULL);
+            ousaged_usage_release_resource("Display", NULL, NULL);
 
             if (!calls->len) {
                 // ultima chiamata chiusa, togli screensaver
@@ -282,16 +280,16 @@ static gboolean fso_connect(gpointer data)
  */
 void notify_calls_init(MokoPanel* panel)
 {
-    dbus_connect_to_ogsmd_call();
+    ogsmd_call_dbus_connect();
 
-    if (callBus == NULL) {
+    if (ogsmdCallBus == NULL) {
         g_error("Cannot connect to ogsmd (call). Exiting");
         return;
     }
 
-    dbus_connect_to_odeviced_idle_notifier();
+    odeviced_idlenotifier_dbus_connect();
 
-    if (odevicedIdleNotifierBus == NULL) {
+    if (odevicedIdlenotifierBus == NULL) {
         g_error("Cannot connect to odeviced (idle notifier). Exiting");
         return;
     }

@@ -21,17 +21,13 @@
 #include <Elementary.h>
 #include <glib.h>
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-powersupply.h>
+#include <freesmartphone-glib/odeviced/powersupply.h>
 
 #include "panel.h"
 #include "battery.h"
 
 // chissa perche' non e' definita...
 int odeviced_power_supply_get_status_from_dbus(const char *status);
-
-static FrameworkdHandler fsoHandlers = {0};
 
 // lista applet batterie
 static GPtrArray* batteries = NULL;
@@ -102,7 +98,7 @@ static void get_capacity_callback(GError *error, int energy, gpointer data)
 
 static void set_charging(GError *error, int power_status)
 {
-    battery_charging = (error == NULL && power_status == DEVICE_POWER_STATE_CHARGING);
+    battery_charging = (error == NULL && power_status == POWER_STATUS_CHARGING);
 
     #if 0
     if (battery_charging && battery_resource_display)
@@ -116,10 +112,10 @@ static void set_charging(GError *error, int power_status)
 static void get_power_status_callback(GError *error, int status, gpointer data)
 {
     set_charging(error, status);
-    odeviced_power_supply_get_capacity(get_capacity_callback, data);
+    odeviced_powersupply_get_capacity(get_capacity_callback, data);
 }
 
-static void capacity_changed(const int energy)
+static void capacity_changed(gpointer data, int energy)
 {
     if (batteries == NULL) return;
 
@@ -128,14 +124,13 @@ static void capacity_changed(const int energy)
         get_capacity_callback(NULL, energy, g_ptr_array_index(batteries, i));
 }
 
-static void power_status_changed(const char* status)
+static void power_status_changed(gpointer data, int status_n)
 {
-    g_debug("Power status changed to %s", status);
-    if (batteries == NULL || status == NULL) return;
+    g_debug("Power status changed to %d", status_n);
+    if (batteries == NULL) return;
 
-    int status_n = odeviced_power_supply_get_status_from_dbus(status);
     set_charging(NULL, status_n);
-    g_debug("Power status changed to %s (%d)", status, status_n);
+    g_debug("Power status changed to %d", status_n);
 
     int i;
     for (i = 0; i < batteries->len; i++) {
@@ -145,22 +140,22 @@ static void power_status_changed(const char* status)
 
 static gboolean battery_fso_connect_timeout(gpointer data)
 {
-    if (odevicedPowerSupplyBus != NULL)
-        odeviced_power_supply_get_power_status(get_power_status_callback, data);
+    if (odevicedPowersupplyBus != NULL)
+        odeviced_powersupply_get_power_status(get_power_status_callback, data);
 
     return TRUE;
 }
 
 static gboolean battery_fso_connect(gpointer data)
 {
-    dbus_connect_to_odeviced_power_supply();
+    odeviced_powersupply_dbus_connect();
 
-    if (odevicedPowerSupplyBus == NULL)
+    if (odevicedPowersupplyBus == NULL)
         g_critical("Cannot connect to odeviced (PowerSupply)");
 
     // richiedi valore iniziale carica batteria
-    if (odevicedPowerSupplyBus != NULL)
-        odeviced_power_supply_get_power_status(get_power_status_callback, data);
+    if (odevicedPowersupplyBus != NULL)
+        odeviced_powersupply_get_power_status(get_power_status_callback, data);
 
     // per ovviare al cazzo di bug del full... sigh...
     g_timeout_add_seconds(5, battery_fso_connect_timeout, data);
@@ -189,10 +184,8 @@ Evas_Object* battery_applet_new(MokoPanel* panel)
     evas_object_show(bat);
 
     // connetti segnali FSO
-    fsoHandlers.devicePowerSupplyCapacity = capacity_changed;
-    fsoHandlers.devicePowerSupplyStatus = power_status_changed;
-
-    fso_handlers_add(&fsoHandlers);
+    odeviced_powersupply_capacity_connect(capacity_changed, NULL);
+    odeviced_powersupply_power_status_connect(power_status_changed, NULL);
 
     // richiesta dati iniziale
     g_idle_add(battery_fso_connect, bat);
