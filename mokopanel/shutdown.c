@@ -22,7 +22,7 @@
 #include <glib.h>
 #include <libmokosuite/mokosuite.h>
 #include <libmokosuite/settings.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged.h>
+#include <freesmartphone-glib/ousaged/usage.h>
 
 #include "shutdown.h"
 
@@ -59,7 +59,7 @@ static void _poweroff(void* data, Evas_Object* obj, void* event_info)
     _poweroff_cancel(data, obj, event_info);
 
     // poweroff :)
-    ousaged_shutdown(NULL, NULL);
+    ousaged_usage_shutdown(NULL, NULL);
 }
 
 static void poweroff_confirm_window(void)

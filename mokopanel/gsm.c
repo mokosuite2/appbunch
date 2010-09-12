@@ -42,9 +42,6 @@
 #define SEGV_ADDRESS    0xbfff0000
 #endif
 
-// lista applet gsm
-static GPtrArray* gsm_applets = NULL;
-
 // segnale GSM
 static gint8 signal_strength = 0;
 
@@ -107,28 +104,27 @@ int FIXED_ogsmd_network_get_registration_status_from_dbus(GHashTable * propertie
     if ((properties == NULL || (guint32)properties < SEGV_ADDRESS)
         ||
         ((reg =
-          g_hash_table_lookup(properties,
-                  DBUS_NETWORK_PROPERTY_REGISTRATION)) == NULL))
+          g_hash_table_lookup(properties, "registration")) == NULL))
         return NETWORK_PROPERTY_REGISTRATION_UNKNOWN;
 
     registration = g_value_get_string(reg);
 
     if (!strcmp
-        (registration, DBUS_NETWORK_PROPERTY_REGISTRATION_UNREGISTERED)) {
+        (registration, "unregistered")) {
         return NETWORK_PROPERTY_REGISTRATION_UNREGISTERED;
     }
-    else if (!strcmp(registration, DBUS_NETWORK_PROPERTY_REGISTRATION_HOME)) {
+    else if (!strcmp(registration, "home")) {
         return NETWORK_PROPERTY_REGISTRATION_HOME;
     }
-    else if (!strcmp(registration, DBUS_NETWORK_PROPERTY_REGISTRATION_BUSY)) {
+    else if (!strcmp(registration, "busy")) {
         return NETWORK_PROPERTY_REGISTRATION_BUSY;
     }
     else if (!strcmp
-        (registration, DBUS_NETWORK_PROPERTY_REGISTRATION_DENIED)) {
+        (registration, "denied")) {
         return NETWORK_PROPERTY_REGISTRATION_DENIED;
     }
     else if (!strcmp
-        (registration, DBUS_NETWORK_PROPERTY_REGISTRATION_ROAMING)) {
+        (registration, "roaming")) {
         return NETWORK_PROPERTY_REGISTRATION_ROAMING;
     }
 
@@ -143,7 +139,7 @@ const char * FIXED_ogsmd_network_get_provider_from_dbus(GHashTable * properties)
     if (properties != NULL && (guint32)properties > SEGV_ADDRESS) {
         provider =
             g_hash_table_lookup(properties,
-                        DBUS_NETWORK_PROPERTY_PROVIDER);
+                        "provider");
         return provider == NULL ? NULL : g_value_get_string(provider);
     }
     return NULL;
@@ -230,7 +226,7 @@ static void get_device_status_callback(GError *error, const int status, gpointer
         case DEVICE_STATUS_CLOSED:
         case DEVICE_STATUS_INITIALIZING:
         case DEVICE_STATUS_ALIVE_NO_SIM:
-        case DEVICE_STATUS_ALIVE_CLOSING:
+        case DEVICE_STATUS_CLOSING:
             gsm_status = GSM_STATUS_DISABLED;
             break;
     }
@@ -242,113 +238,70 @@ static void get_auth_status_callback(GError *error, int status, gpointer data)
 {
     g_debug("SIM auth status %d", status);
 
-    if (status == SIM_READY) {
+    if (status == SIM_AUTH_STATUS_READY) {
         sim_locked = FALSE;
         // probabile rientro da modalita' offline
         ogsmd_device_get_functionality(get_functionality_callback, data);
     }
 
-    else if (status != SIM_UNKNOWN)
+    else if (status != SIM_AUTH_STATUS_UNKNOWN)
         sim_locked = TRUE;
 
     update_icon((Evas_Object *)data);
 }
 
-#if 0
-static void get_resource_state_callback(GError *error, gboolean state, gpointer data)
+static void signal_strength_changed(gpointer data, int strength)
 {
-    if (!state) {
-        gsm_status = GSM_STATUS_DISABLED;
-        update_icon((Evas_Object *) data);
-    }
+    get_signal_strength_callback(NULL, strength, data);
 }
 
-static void resource_changed (const char *name, gboolean state, GHashTable *attributes)
+static void network_status_changed(gpointer data, GHashTable* status)
 {
-    if (gsm_applets == NULL) return;
-
-    g_debug("Resource changed: %s (%d)", name, state);
-    if (!strcmp(name, "GSM")) {
-        // GSM disattivato...
-        int i;
-        for (i = 0; i < gsm_applets->len; i++)
-            get_resource_state_callback(NULL, state, g_ptr_array_index(gsm_applets, i));
-    }
-}
-#endif
-
-static void signal_strength_changed(const int strength)
-{
-    if (gsm_applets == NULL) return;
-
-    int i;
-    for (i = 0; i < gsm_applets->len; i++)
-        get_signal_strength_callback(NULL, strength, g_ptr_array_index(gsm_applets, i));
+    get_network_status_callback(NULL, status, data);
 }
 
-static void network_status_changed(GHashTable* status)
+static void device_status_changed(gpointer data, int status)
 {
-    if (gsm_applets == NULL) return;
-
-    int i;
-    for (i = 0; i < gsm_applets->len; i++)
-        get_network_status_callback(NULL, status, g_ptr_array_index(gsm_applets, i));   
+    get_device_status_callback(NULL, status, data);
 }
 
-static void device_status_changed(const int status)
+static void auth_status_changed(gpointer data, int status)
 {
-    if (gsm_applets == NULL) return;
-
-    int i;
-    for (i = 0; i < gsm_applets->len; i++)
-        get_device_status_callback(NULL, status, g_ptr_array_index(gsm_applets, i));
-}
-
-static void auth_status_changed(const int status)
-{
-    if (gsm_applets == NULL) return;
-
-    int i;
-    for (i = 0; i < gsm_applets->len; i++)
-        get_auth_status_callback(NULL, status, g_ptr_array_index(gsm_applets, i));
+    get_auth_status_callback(NULL, status, data);
 }
 
 static gboolean gsm_fso_connect(gpointer data)
 {
-    dbus_connect_to_ousaged();
-    if (ousagedBus == NULL)
-        g_critical("Cannot connect to ousaged; will not be able to detect GSM resource change");
-
-    dbus_connect_to_ogsmd_network();
-    if (networkBus == NULL)
+    ogsmd_network_dbus_connect();
+    if (ogsmdNetworkBus == NULL)
         g_critical("Cannot connect to ogsmd (network)");
 
-    dbus_connect_to_ogsmd_device();
-    if (deviceBus == NULL)
+    ogsmd_device_dbus_connect();
+    if (ogsmdDeviceBus == NULL)
         g_critical("Cannot connect to ogsmd (device)");
 
-    dbus_connect_to_ogsmd_sim();
-    if (simBus == NULL)
+    ogsmd_sim_dbus_connect();
+    if (ogsmdSimBus == NULL)
         g_critical("Cannot connect to ogsmd (sim)");
 
-    #if 0
-    // richiedi valore iniziale policy risorsa per l'offline mode
-    if (ousagedBus != NULL)
-        ousaged_get_resource_state("GSM", get_resource_state_callback, data);
-    #endif
-
     // richiedi valori iniziali gsm
-    if (networkBus != NULL) {
+    if (ogsmdNetworkBus != NULL) {
         ogsmd_network_get_status(get_network_status_callback, data);
         ogsmd_network_get_signal_strength(get_signal_strength_callback, data);
     }
 
     // richiedi stato iniziale modem gsm
-    if (deviceBus != NULL)
+    if (ogsmdDeviceBus != NULL)
         ogsmd_device_get_device_status(get_device_status_callback, data);
 
-    if (simBus != NULL)
+    if (ogsmdSimBus != NULL)
         ogsmd_sim_get_auth_status(get_auth_status_callback, data);
+
+    // connetti segnali FSO
+    ogsmd_network_status_connect(network_status_changed, data);
+    ogsmd_network_signal_strength_connect(signal_strength_changed, data);
+    ogsmd_device_device_status_connect(device_status_changed, data);
+    ogsmd_sim_auth_status_connect(auth_status_changed, data);
 
     return FALSE;
 }
@@ -435,10 +388,6 @@ static gboolean next_icon(gpointer applet)
 
 Evas_Object* gsm_applet_new(MokoPanel* panel)
 {
-    // TODO free func
-    if (gsm_applets == NULL)
-        gsm_applets = g_ptr_array_new();
-
     Evas_Object* gsm = elm_icon_add(panel->win);
 
     elm_icon_file_set(gsm, MOKOSUITE_DATADIR "gsm-null.png", NULL);
@@ -453,26 +402,8 @@ Evas_Object* gsm_applet_new(MokoPanel* panel)
     evas_object_size_hint_min_set(gsm, ICON_SIZE, ICON_SIZE);
     evas_object_show(gsm);
 
-    // connetti segnali FSO
-    if (fsoHandlers.networkStatus == NULL) {
-        fsoHandlers.networkStatus = network_status_changed;
-        fsoHandlers.networkSignalStrength = signal_strength_changed;
-        #if 0
-        fsoHandlers.usageResourceChanged = resource_changed;
-        #endif
-        fsoHandlers.gsmDeviceStatus = device_status_changed;
-        fsoHandlers.simAuthStatus = auth_status_changed;
-
-        fso_handlers_add(&fsoHandlers);
-    }
-
     // richiesta dati iniziale
     g_idle_add(gsm_fso_connect, gsm);
-
-    g_ptr_array_add(gsm_applets, gsm);
-
-    // TEST icona
-    //g_timeout_add_seconds(5, next_icon, gsm);
 
     return gsm;
 }

@@ -2,7 +2,7 @@ DESCRIPTION = "Desktop environment and phone stack GUI for SHR"
 HOMEPAGE = "http://wiki.openmoko.org/"
 AUTHOR = "Daniele Ricci"
 LICENSE = "GPLv3"
-DEPENDS = "elementary libframeworkd-glib libphone-utils eggdbus glib-2.0 dbus-glib alsa-lib db sqlite3"
+DEPENDS = "elementary libfreesmartphone-glib libphone-utils eggdbus glib-2.0 dbus-glib alsa-lib db sqlite3"
 SECTION = "misc/utils"
 
 PV = "1.0+gitr${SRCPV}"

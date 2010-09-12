@@ -26,6 +26,15 @@
 #include "panel.h"
 
 typedef enum {
+    NETWORK_PROPERTY_REGISTRATION_UNKNOWN = 0,
+    NETWORK_PROPERTY_REGISTRATION_UNREGISTERED,
+    NETWORK_PROPERTY_REGISTRATION_HOME,
+    NETWORK_PROPERTY_REGISTRATION_BUSY,
+    NETWORK_PROPERTY_REGISTRATION_DENIED,
+    NETWORK_PROPERTY_REGISTRATION_ROAMING
+} NetworkStatus;
+
+typedef enum {
 
     /* risorsa modem assente/disattivata, fsogsmd non in esecuzione
      * ousaged: ResourceChanged (0)

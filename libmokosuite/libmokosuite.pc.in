@@ -5,9 +5,9 @@ includedir=@includedir@
 datarootdir=@datarootdir@
 datadir=@datadir@
 
-Name: libmoosuite
+Name: libmokosuite
 Description: Mokosuite common library
 Version: @VERSION@
-Requires: elementary dbus-glib-1 libframeworkd-glib
+Requires: elementary dbus-glib-1 libfreesmartphone-glib
 Libs: -L${libdir} -lmokosuite
 Cflags: -I${includedir}/mokosuite

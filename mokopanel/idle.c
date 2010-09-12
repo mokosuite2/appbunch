@@ -24,16 +24,13 @@
 #include <linux/input.h>
 
 #include <libmokosuite/mokosuite.h>
-#include <libmokosuite/fso.h>
 #include <libmokosuite/settings-service.h>
 
-#include <frameworkd-glib/frameworkd-glib-dbus.h>
-#include <frameworkd-glib/ousaged/frameworkd-glib-ousaged.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-powersupply.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-idlenotifier.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-input.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-dbus.h>
-#include <frameworkd-glib/odeviced/frameworkd-glib-odeviced-display.h>
+#include <freesmartphone-glib/odeviced/powersupply.h>
+#include <freesmartphone-glib/odeviced/idlenotifier.h>
+#include <freesmartphone-glib/odeviced/input.h>
+#include <freesmartphone-glib/odeviced/display.h>
+#include <freesmartphone-glib/ousaged/usage.h>
 
 #include <Elementary.h>
 #include <Ecore_X.h>
@@ -141,7 +138,7 @@ void screensaver_on(void)
     _set_screensaver(dpy, ScreenSaverActive);
     XCloseDisplay(dpy);
 #else
-    odeviced_display_set_backlight(FALSE, NULL, NULL);
+    odeviced_display_set_backlight_power(FALSE, NULL, NULL);
     screensaver_status = TRUE;
 #endif
 }
@@ -155,7 +152,7 @@ void screensaver_off(void)
     _set_screensaver(dpy, ScreenSaverReset);
     XCloseDisplay(dpy);
 #else
-    odeviced_display_set_backlight(TRUE, NULL, NULL);
+    odeviced_display_set_backlight_power(TRUE, NULL, NULL);
     odeviced_display_set_brightness(brightness, NULL, NULL);
     screensaver_status = FALSE;
 #endif
@@ -274,13 +271,13 @@ void idle_hide(void)
     // rilascia controllo prelock
     delayed_prelock_timeout = -1;
 
-    odeviced_idle_notifier_set_state(DEVICE_IDLE_STATE_BUSY, NULL, NULL);
+    odeviced_idlenotifier_set_state(IDLE_STATE_BUSY, NULL, NULL);
     evas_object_hide(win);
 }
 
 static void _screensaver_power_check(GError *error, int status, gpointer userdata)
 {
-    if (error == NULL && (status == DEVICE_POWER_STATE_FULL || status == DEVICE_POWER_STATE_CHARGING)) {
+    if (error == NULL && (status == POWER_STATUS_FULL || status == POWER_STATUS_CHARGING)) {
         g_debug("not activating screensaver due to charging or battery full");
         return;
     }
@@ -290,43 +287,43 @@ static void _screensaver_power_check(GError *error, int status, gpointer userdat
 
 static void _suspend_power_check(GError *error, int status, gpointer userdata)
 {
-    if (error == NULL && (status == DEVICE_POWER_STATE_FULL || status == DEVICE_POWER_STATE_CHARGING)) {
+    if (error == NULL && (status == POWER_STATUS_FULL || status == POWER_STATUS_CHARGING)) {
         g_debug("not suspending due to charging or battery full");
         return;
     }
-    ousaged_suspend(NULL, NULL);
+    ousaged_usage_suspend(NULL, NULL);
 }
 
 static gboolean delayed_prelock(gpointer data)
 {
     delayed_prelock_timeout = 0;
-    odeviced_idle_notifier_set_state(DEVICE_IDLE_STATE_PRELOCK, NULL, NULL);
+    odeviced_idlenotifier_set_state(IDLE_STATE_IDLE_PRELOCK, NULL, NULL);
     return FALSE;
 }
 
-static void idle_state(gpointer data, const int state)
+static void idle_state(gpointer data, int state)
 {
     g_debug("IDLE STATE %d", state);
     previous_state = current_state;
     current_state = state;
 
     // IDLE_DIM - diminuisci luminosita'
-    if (state == DEVICE_IDLE_STATE_IDLE_DIM) {
+    if (state == IDLE_STATE_IDLE_DIM) {
         // TODO parametrizzare :)
         odeviced_display_set_brightness(50, NULL, NULL);
     }
 
     // PRELOCK - mostra idlescreen
-    else if (state == DEVICE_IDLE_STATE_PRELOCK) {
+    else if (state == IDLE_STATE_IDLE_PRELOCK) {
         idle_raise(TRUE);
     }
 
     // LOCK - mostra idlescreen e attiva screensaver
-    else if (state == DEVICE_IDLE_STATE_LOCK) {
+    else if (state == IDLE_STATE_LOCK) {
 
         // dim on usb disattivo, controlla power status
         if (!dim_on_usb)
-            odeviced_power_supply_get_power_status (_screensaver_power_check, NULL);
+            odeviced_powersupply_get_power_status(_screensaver_power_check, NULL);
         else
             screensaver_on();
 
@@ -334,16 +331,16 @@ static void idle_state(gpointer data, const int state)
     }
 
     // SUSPEND - sospendi
-    else if (state == DEVICE_IDLE_STATE_SUSPEND) {
-        odeviced_power_supply_get_power_status (_suspend_power_check, NULL);
+    else if (state == IDLE_STATE_SUSPEND) {
+        odeviced_powersupply_get_power_status(_suspend_power_check, NULL);
 
     }
 
     // riattivazione - disattiva screensaver e idlescreen
-    else if (state == DEVICE_IDLE_STATE_BUSY) {
+    else if (state == IDLE_STATE_BUSY) {
         if (previous_state < 0 ||
-            previous_state == DEVICE_IDLE_STATE_LOCK ||
-            previous_state == DEVICE_IDLE_STATE_SUSPEND) {
+            previous_state == IDLE_STATE_LOCK ||
+            previous_state == IDLE_STATE_SUSPEND) {
             // ripresenta le notifiche
             mokopanel_notification_represent(current_panel);
 
@@ -362,13 +359,13 @@ static void idle_state(gpointer data, const int state)
     }
 }
 
-static void input_event(gpointer data, char* source, char* action, int duration)
+static void input_event(gpointer data, const char* source, int action, int duration)
 {
-    g_debug("INPUT EVENT source=%s, action=%s, duration=%d", source, action, duration);
+    g_debug("INPUT EVENT source=%s, action=%d, duration=%d", source, action, duration);
 
     if (!strcmp(source, "POWER")) {
 
-        if (duration < 1 && !strcmp(action, "pressed")) {
+        if (duration < 1 && action == INPUT_STATE_PRESSED) {
             if (screensaver_status) {
                 screensaver_off();
             }
@@ -379,12 +376,12 @@ static void input_event(gpointer data, char* source, char* action, int duration)
             }
         }
 
-        if (!strcmp(action, "released") && duration >= 1 && duration < 3) {
+        if (action == INPUT_STATE_RELEASED && duration >= 1 && duration < 3) {
             idle_raise(TRUE);
-            odeviced_idle_notifier_set_state(DEVICE_IDLE_STATE_LOCK, NULL, NULL);
+            odeviced_idlenotifier_set_state(IDLE_STATE_LOCK, NULL, NULL);
         }
 
-        if (!strcmp(action, "held") && duration == 3) {
+        if (action == INPUT_STATE_HELD && duration == 3) {
             g_debug("Shutdown window");
             screensaver_off();
             idle_hide();
@@ -467,7 +464,7 @@ static void init_settings()
     }
 
     // stato iniziale! :)
-    odeviced_idle_notifier_set_state(DEVICE_IDLE_STATE_PRELOCK, NULL, NULL);
+    odeviced_idlenotifier_set_state(IDLE_STATE_IDLE_PRELOCK, NULL, NULL);
     screensaver_off();
 
     #if 0
@@ -480,23 +477,23 @@ static void init_settings()
 
 static gboolean idle_fso_connect(gpointer data)
 {
-    dbus_connect_to_odeviced_idle_notifier();
+    odeviced_idlenotifier_dbus_connect();
 
-    if (odevicedIdleNotifierBus == NULL)
+    if (odevicedIdlenotifierBus == NULL)
         g_critical("Cannot connect to odeviced; will not be able to receive idle state");
 
-    dbus_connect_to_odeviced_display();
+    odeviced_display_dbus_connect();
 
     if (odevicedDisplayBus == NULL)
         g_critical("Cannot connect to odeviced; will not be able to set display brightness");
 
-    dbus_connect_to_odeviced_power_supply();
+    odeviced_powersupply_dbus_connect();
 
-    if (odevicedPowerSupplyBus == NULL)
+    if (odevicedPowersupplyBus == NULL)
         g_critical("Cannot connect to odeviced; will not be able to receive suspend power status");
 
     // segnali fso
-    odeviced_idle_notifier_state_connect(idle_state, NULL);
+    odeviced_idlenotifier_state_connect(idle_state, NULL);
     odeviced_input_event_connect(input_event, NULL);
 
     init_settings();

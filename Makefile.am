@@ -5,4 +5,5 @@ MAINTAINERCLEANFILES = aclocal.m4 compile config.guess config.sub \
                        Makefile.in missing ltmain.sh \
                        mkinstalldirs config.h.in config.h.in~ INSTALL
 
-#MAINTAINERCLEANDIRS = m4
+maintainer-clean-local:
+	$(RM) -R m4
