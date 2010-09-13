@@ -245,7 +245,7 @@ static void log_process_call(CallEntry* call, gpointer data)
 
     call->data = it;
 
-    if (call->is_new) {
+    if (call->is_new && !call->answered && call->direction == DIRECTION_INCOMING) {
         char* text;
         if (call->data2 != NULL) {
             ContactField* f = contactsdb_get_first_field((ContactEntry *) call->data2, CONTACT_FIELD_NAME);

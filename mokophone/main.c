@@ -10,6 +10,7 @@
 #include <phone-utils.h>
 #include <libmokosuite/contactsdb.h>
 #include <libmokosuite/notifications.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
 
 static MokoPhoneService *phone_service = NULL;
 static MokoSettingsService *settings_service = NULL;
@@ -35,6 +36,9 @@ int main(int argc, char *argv[])
 #ifdef USE_THREADS
     g_thread_init(NULL);
 #endif
+
+    /* inizializza fso */
+    freesmartphone_glib_init();
 
     /* inizializza le phone utils */
     phone_utils_init();

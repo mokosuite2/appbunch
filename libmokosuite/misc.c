@@ -28,7 +28,7 @@ int fso_get_attribute_int(GHashTable* properties, const char* key)
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
-    g_debug("Type=%s", G_VALUE_TYPE_NAME(gval));
+    //g_debug("Type=%s", G_VALUE_TYPE_NAME(gval));
 
     if (gval != NULL) value = g_value_get_int(gval);
 

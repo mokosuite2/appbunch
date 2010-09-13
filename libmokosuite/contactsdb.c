@@ -531,7 +531,7 @@ end:
 #endif
 
     if (db == NULL)
-        g_warning("Unable to open calls database; will not be able to log calls");
+        g_warning("Unable to open contacts database; will not be able to store contacts");
 
     else {
         // recupera il timestamp del database
