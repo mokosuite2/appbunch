@@ -47,7 +47,7 @@ static void _request_resource_callback(GError * error, gpointer userdata)
         return;
     }
 
-    g_debug("request resource error, try again in 1s");
+    g_debug("request resource error, try again in 1s (%s, %d)", error->message, error->code);
     g_timeout_add(1000, request_gsm, NULL);
 }
 
@@ -116,7 +116,7 @@ static void _sim_get_auth_status_callback(GError *error, int status, gpointer da
 
     /* altri errori o stato sconosciuto, riprova tra 5s */
     if (error || status == SIM_AUTH_STATUS_UNKNOWN) {
-        g_debug("Error: %s", error->message);
+        g_debug("SIM auth status error: %s", error->message);
         g_timeout_add(5000, get_auth_status, NULL);
         return;
     }
@@ -165,7 +165,7 @@ static void _online_callback(GError *error, gpointer userdata)
     g_debug("going online");
     // TODO controlla errori set functionality
     if (error) {
-        g_message("SetFunctionality() error: (%d) %s", error->code, error->message);
+        g_warning("SetFunctionality error: (%d) %s", error->code, error->message);
     }
 
     get_auth_status(NULL);

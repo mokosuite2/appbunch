@@ -10,13 +10,14 @@
 
 #include <freesmartphone-glib/freesmartphone-glib.h>
 #include <freesmartphone-glib/opimd/calls.h>
+#include <freesmartphone-glib/opimd/call.h>
 #include <freesmartphone-glib/opimd/callquery.h>
 
 typedef struct {
     /* liberati subito */
     GHashTable* query;
-    GTimer* timer;
     /* mantenuti fino alla fine */
+    GTimer* timer;
     CallEntryFunc func;
     gpointer userdata;
     char* path;
@@ -28,18 +29,19 @@ static void _cb_next(GError* error, GHashTable* row, gpointer userdata)
 
     if (error) {
         g_debug("[%s] Call row error: %s", __func__, error->message);
+        g_debug("[%s] Call log loading took %f seconds", __func__, g_timer_elapsed(data->timer, NULL));
+        g_timer_destroy(data->timer);
+
         g_free(data->path);
         g_free(data);
         return;
     }
 
-    //g_debug("[%s] Call row entry %p", __func__, row);
     const char* _peer = fso_get_attribute(row, "Peer");
 
     if (_peer != NULL) {
         CallEntry *e = g_new0(CallEntry, 1);
 
-        // l'id deve essere > 0, altrimenti salta tutto
         e->id = fso_get_attribute_int(row, "EntryId");
         //g_debug("[%s] Call entry id %lld", __func__, e->id);
 
@@ -67,7 +69,6 @@ static void _cb_query(GError* error, char* path, gpointer userdata)
 {
     query_data_t* data = userdata;
     g_debug("[%s] query took %f seconds", __func__, g_timer_elapsed(data->timer, NULL));
-    g_timer_destroy(data->timer);
     g_hash_table_destroy(data->query);
 
     data->path = g_strdup(path);
@@ -118,22 +119,27 @@ void callsdb_set_call_new(gint64 id, gboolean is_new)
     g_timer_destroy(t);
 }
 
+static void _cb_delete(GError* error, gpointer userdata)
+{
+    GTimer* t = userdata;
+    g_debug("[callsdb_delete_call] query took %f seconds", g_timer_elapsed(t, NULL));
+    g_timer_destroy(t);
+}
+
 gboolean callsdb_delete_call(gint64 id)
 {
     if (opimdCallsBus == NULL) return FALSE;
 
     GTimer* t = g_timer_new();
+    char* path = g_strdup_printf("/org/freesmartphone/PIM/Calls/%lld", id);
+    opimd_call_delete(path, _cb_delete, t);
+    g_free(path);
 
-    g_debug("[%s] query took %f seconds", __func__, g_timer_elapsed(t, NULL));
-    g_timer_destroy(t);
-
-    // TODO :)
-    return FALSE;
+    return TRUE;
 }
 
 gboolean callsdb_truncate(void)
 {
-
     GTimer* t = g_timer_new();
     g_debug("[%s] query took %f seconds", __func__, g_timer_elapsed(t, NULL));
     g_timer_destroy(t);
