@@ -128,7 +128,8 @@ static Eina_Bool _key_up(void* data, int type, void* event)
                 input_win_hide();
 
             else
-                ecore_x_icccm_delete_window_send(e->window, e->timestamp);
+                // mandiamo il segnale di delete alla finestra che ha il focus, non alla finestra sotto il mouse!
+                ecore_x_icccm_delete_window_send(ecore_x_window_focus_get(), e->timestamp);
         }
     }
 
@@ -215,6 +216,7 @@ wm_client* find_client(Ecore_X_Window win)
 // tira su la finestra passata e le da il focus
 void raise_window(Ecore_X_Window win)
 {
+    g_debug("[%s] Giving focus 0x%x (input_win=0x%x)", __func__, win, (input_client != NULL) ? input_client->win : NULL);
     ecore_x_window_focus(win);
     ecore_x_window_raise(win);
 
@@ -247,7 +249,7 @@ void raise_client(wm_client* c)
     g_debug("[%s] Raising window 0x%x (c=%p, desktop_client=%p)",
         __func__, c->win, c, desktop_client);
 
-    if (c->visible && c != desktop_client && c != input_client) {
+    if (c->visible && c != desktop_client && c != input_client && c != dock_client) {
 
         // porta il client al top della coda
         g_queue_remove(windows, c);

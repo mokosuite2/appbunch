@@ -355,7 +355,7 @@ void notification_window_remove(MokoNotification* n)
 
 void notify_window_init(MokoPanel* panel)
 {
-    Evas_Object* win = elm_win_add(NULL, "mokonotifications", ELM_WIN_DIALOG_BASIC);
+    Evas_Object* win = elm_win_add(NULL, "mokonotifications", ELM_WIN_BASIC);
     if (win == NULL) {
         g_critical("Cannot create notifications window; will not be able to read notifications");
         return;
@@ -367,9 +367,11 @@ void notify_window_init(MokoPanel* panel)
 
     evas_object_smart_callback_add(win, "focus,in", _focus_out, NULL);
 
+    #if 0
     // FIXME FIXME FIXME!!!
     evas_object_resize(win, 480, 600);
     evas_object_move(win, 0, 40);
+    #endif
 
     Ecore_X_Window_State state;
 
@@ -445,8 +447,10 @@ void notify_window_start(void)
 
     if (!evas_object_visible_get(notification_win)) {
 
+        #if 0
         evas_object_move(notification_win, 0, 40);
         evas_object_resize(notification_win, 480, 40);
+        #endif
 
         // notifica al pannello l'evento
         mokopanel_fire_event(current_panel, MOKOPANEL_CALLBACK_NOTIFICATION_START, NULL);
@@ -459,8 +463,10 @@ void notify_window_end(void)
 {
     g_return_if_fail(notification_win != NULL);
 
+    #if 0
     evas_object_move(notification_win, 0, 40);
     evas_object_resize(notification_win, 480, 600);
+    #endif
     notify_window_show();
 
     notification_show = TRUE;
