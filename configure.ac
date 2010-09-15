@@ -189,7 +189,6 @@ AC_OUTPUT([
   Makefile
   libmokosuite/libmokosuite.pc
   libmokosuite/Makefile
-  data/mokosession
   data/Makefile
   data/themes/Makefile
   data/themes/gry/Makefile
@@ -202,5 +201,4 @@ AC_OUTPUT([
   mokopanel/Makefile
   mokohome/Makefile
   mokosettings/Makefile
-  mokowm/Makefile
   tests/Makefile])
