@@ -38,16 +38,11 @@ static void process_notification_queue(gpointer data);
 
 static void _panel_mouse_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
 {
-    // TODO
-    g_debug("IC mouse down");
     notify_window_start();
 }
 
 static void _panel_mouse_up(void *data, Evas *e, Evas_Object *obj, void *event_info)
 {
-    // TODO
-    g_debug("IC mouse up");
-    //notify_window_hide();
     notify_window_end();
 }
 
@@ -65,26 +60,6 @@ static void free_notification(gpointer data)
         evas_object_del(ic);
 
     g_free(data);
-}
-
-void mokopanel_set_wm_strut(MokoPanel* p)
-{
-    unsigned int data[12] = { 0 };
-    int i = 4;
-
-    i = 2;
-    data[i] = PANEL_HEIGHT; //p->ah;
-    data[4 + i*2] = 0;  //p->ax;
-    data[5 + i*2] = 0 + PANEL_WIDTH;    //p->ax + p->aw;
-    
-    g_debug("type %d. width %d. from %d to %d\n", i, data[i], data[4 + i*2], data[5 + i*2]);
-
-    /* if wm supports STRUT_PARTIAL it will ignore STRUT */
-    ecore_x_window_prop_card32_set(elm_win_xwindow_get(p->win), ECORE_X_ATOM_NET_WM_STRUT_PARTIAL, data, 12);
-    //ecore_x_window_prop_property_set(elm_win_xwindow_get(p->win), ECORE_X_ATOM_NET_WM_STRUT_PARTIAL, ECORE_X_ATOM_CARDINAL, 32, data, 12);
-
-    ecore_x_window_prop_card32_set(elm_win_xwindow_get(p->win), ECORE_X_ATOM_NET_WM_STRUT, data, 4);
-    //ecore_x_window_prop_property_set(elm_win_xwindow_get(p->win), ECORE_X_ATOM_NET_WM_STRUT, ECORE_X_ATOM_CARDINAL, 32, data, 4);
 }
 
 static gboolean do_pop_text_notification(gpointer data)
@@ -203,9 +178,7 @@ static void push_represent(MokoPanel* panel, int id, const char* text, const cha
     g_queue_push_tail(panel->represent, data);
 }
 
-#if 0
 static Evas_Object* lbldate = NULL;
-#endif
 
 /**
  * Gestore degli eventi del pannello predefinito.
@@ -216,7 +189,6 @@ void mokopanel_event(MokoPanel* panel, int event, gpointer data)
 
     switch (event) {
         case MOKOPANEL_CALLBACK_NOTIFICATION_START:
-            #if 0
             lbldate = elm_label_add(panel->win);
             elm_label_label_set(lbldate, " <b>2010-04-06</b>");
 
@@ -224,15 +196,14 @@ void mokopanel_event(MokoPanel* panel, int event, gpointer data)
             evas_object_size_hint_align_set (lbldate, EVAS_HINT_FILL, EVAS_HINT_FILL);
             evas_object_show(lbldate);
             elm_pager_content_push(panel->pager, lbldate);
-            #endif
 
             break;
 
         case MOKOPANEL_CALLBACK_NOTIFICATION_HIDE:
-            #if 0
-            if (lbldate)
+            if (lbldate) {
                 evas_object_del(lbldate);
-            #endif
+                lbldate = NULL;
+            }
 
             break;
     }
@@ -409,19 +380,6 @@ no_icon:
     return seq;
 }
 
-static Eina_Bool _panel_show(void* data, int type, void* event)
-{
-    MokoPanel* p = data;
-
-    if (!p->has_strut) {
-        g_debug("Setting strut to panel");
-        p->has_strut = TRUE;
-        mokopanel_set_wm_strut(p);
-    }
-
-    return ECORE_CALLBACK_CANCEL;
-}
-
 MokoPanel* mokopanel_new(const char* name, const char* title)
 {
     Ecore_X_Window xwin;
@@ -515,7 +473,6 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     evas_object_show(ev);
 
     ecore_x_event_mask_set(xwin, ECORE_X_EVENT_MASK_WINDOW_VISIBILITY);
-    ecore_event_handler_add(ECORE_X_EVENT_WINDOW_SHOW, _panel_show, panel);
 
     evas_object_size_hint_min_set(panel->layout, PANEL_WIDTH, PANEL_HEIGHT);
     evas_object_resize(panel->win, PANEL_WIDTH, PANEL_HEIGHT);

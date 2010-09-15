@@ -84,9 +84,17 @@ void callsdb_foreach_call(CallEntryFunc func, gpointer data)
     query_data_t* cbdata = g_new0(query_data_t, 1);
 
     cbdata->timer = g_timer_new();
-    cbdata->query = g_hash_table_new(g_str_hash, g_str_equal);
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
     cbdata->userdata = data;
     cbdata->func = func;
+
+    GValue* value;
+
+    value = g_value_from_string("Timestamp");
+    g_hash_table_insert(cbdata->query, g_strdup("_sortby"), value);
+
+    value = g_value_from_string("1");
+    g_hash_table_insert(cbdata->query, g_strdup("_sortdesc"), value);
 
     opimd_calls_query(cbdata->query, _cb_query, cbdata);
 }

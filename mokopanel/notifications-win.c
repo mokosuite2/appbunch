@@ -46,6 +46,8 @@ static Evas_Object* notification_list = NULL;
 static Elm_Genlist_Item_Class itc = {0};
 static gboolean notification_show = FALSE;
 
+static Evas_Object* operator_label = NULL;
+
 extern MokoSettingsService* panel_settings;
 
 // label notifiche
@@ -191,7 +193,7 @@ static void _close_handle_click(void* data, Evas_Object* obj, void* event_info)
 
 static void _focus_out(void* data, Evas_Object* obj, void* event_info)
 {
-    g_debug("FOCUS OUT (%d)", notification_show);
+    //g_debug("FOCUS OUT (%d)", notification_show);
     if (notification_show)
         notify_window_hide();
 }
@@ -205,8 +207,6 @@ static void _list_selected(void *data, Evas_Object *obj, void *event_info)
     // FIXME mamma mia che porcata! :S
     GError *err = NULL;
 
-    g_debug("n = %p", n);
-    g_debug("n->type = %d", n->type);
     char *cmd = g_strdup_printf("sh -c \"%s\"", notification_commands[n->type]);
     g_spawn_command_line_async(cmd, &err);
 
@@ -365,7 +365,7 @@ void notify_window_init(MokoPanel* panel)
     elm_win_borderless_set(win, TRUE);
     elm_win_sticky_set(win, TRUE);
 
-    evas_object_smart_callback_add(win, "focus,in", _focus_out, NULL);
+    evas_object_smart_callback_add(win, "focus,out", _focus_out, NULL);
 
     #if 0
     // FIXME FIXME FIXME!!!
@@ -400,7 +400,21 @@ void notify_window_init(MokoPanel* panel)
     elm_win_resize_object_add(win, vbox);
     evas_object_show(vbox);
 
-    // TODO intestazione
+    // intestazione
+    Evas_Object* hdrbox = elm_box_add(win);
+    elm_box_horizontal_set(hdrbox, TRUE);
+    evas_object_size_hint_weight_set(hdrbox, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set(hdrbox, EVAS_HINT_FILL, 0.0);
+    evas_object_show(hdrbox);
+
+    // operatore gsm
+    operator_label = elm_label_add(win);
+    evas_object_size_hint_weight_set(operator_label, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set(operator_label, 0.1, 0.5);
+    evas_object_show(operator_label);
+
+    elm_box_pack_start(hdrbox, operator_label);
+
     // TEST pulsante tastiera :)
     Evas_Object* vkb = elm_button_add(win);
     elm_button_label_set(vkb, _("Keyboard"));
@@ -409,7 +423,10 @@ void notify_window_init(MokoPanel* panel)
     evas_object_smart_callback_add(vkb, "clicked", _keyboard_click, NULL);
     evas_object_show(vkb);
 
-    elm_box_pack_start(vbox, vkb);
+    elm_box_pack_end(hdrbox, vkb);
+
+    // aggiungi l'intestazione alla finestra
+    elm_box_pack_start(vbox, hdrbox);
 
     Evas_Object* list = elm_genlist_add(win);
     elm_genlist_bounce_set(list, FALSE, FALSE);
@@ -446,29 +463,16 @@ void notify_window_start(void)
     g_return_if_fail(notification_win != NULL);
 
     if (!evas_object_visible_get(notification_win)) {
-
-        #if 0
-        evas_object_move(notification_win, 0, 40);
-        evas_object_resize(notification_win, 480, 40);
-        #endif
-
         // notifica al pannello l'evento
         mokopanel_fire_event(current_panel, MOKOPANEL_CALLBACK_NOTIFICATION_START, NULL);
     }
-
-    notify_window_show();
 }
 
 void notify_window_end(void)
 {
     g_return_if_fail(notification_win != NULL);
 
-    #if 0
-    evas_object_move(notification_win, 0, 40);
-    evas_object_resize(notification_win, 480, 600);
-    #endif
     notify_window_show();
-
     notification_show = TRUE;
 
     // notifica al pannello l'evento
@@ -494,4 +498,13 @@ void notify_window_hide(void)
 
     // notifica al pannello l'evento
     mokopanel_fire_event(current_panel, MOKOPANEL_CALLBACK_NOTIFICATION_HIDE, NULL);
+}
+
+void notify_window_update_operator(const char* operator)
+{
+    if (operator_label) {
+        char* op = g_strdup_printf("<b><font_size=10>%s</></b>", operator);
+        elm_label_label_set(operator_label, op);
+        g_free(op);
+    }
 }

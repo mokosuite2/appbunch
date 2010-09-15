@@ -51,4 +51,6 @@ void notify_window_end(void);
 void notify_window_show(void);
 void notify_window_hide(void);
 
+void notify_window_update_operator(const char* operator);
+
 #endif  /* __PANEL_NOTIFICATIONS_H */

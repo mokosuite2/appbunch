@@ -38,10 +38,6 @@ gboolean battery_charging = FALSE;
 // flag occupazione display su connessione usb
 gboolean battery_resource_display = FALSE;
 
-// FIXME workaround per bug elm_icon
-static int old_perc = -1;
-static gboolean old_charging = FALSE;
-
 static void get_capacity_callback(GError *error, int energy, gpointer data)
 {
     Evas_Object* bat = (Evas_Object*) data;
@@ -69,14 +65,6 @@ static void get_capacity_callback(GError *error, int energy, gpointer data)
             perc = 100;
 
     }
-
-    if (old_perc == perc && old_charging == battery_charging) {
-        //g_debug("FIXME workaround to elm_icon bug - not setting battery icon");
-        return;
-    }
-
-    old_perc = perc;
-    old_charging = battery_charging;
 
     if (perc < 0)
         ic = g_strdup(MOKOSUITE_DATADIR "battery-unknown.png");

@@ -35,6 +35,15 @@ int fso_get_attribute_int(GHashTable* properties, const char* key)
     return value;
 }
 
+GValue* g_value_from_string(const char* string)
+{
+    GValue* value = g_new0(GValue, 1);
+    g_value_init(value, G_TYPE_STRING);
+    g_value_set_string(value, string);
+
+    return value;
+}
+
 guint64 get_current_time(void)
 {
     GTimeVal tv = {0};

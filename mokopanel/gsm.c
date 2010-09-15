@@ -31,6 +31,7 @@
 #include "panel.h"
 #include "gsm.h"
 #include "idle.h"
+#include "notifications-win.h"
 
 #include <glib/gi18n-lib.h>
 
@@ -54,16 +55,13 @@ static gboolean offline_mode = FALSE;
 // flag SIM bloccata
 static gboolean sim_locked = FALSE;
 
-// FIXME workaround per bug elm_icon
-static GsmIcon old_icon = GSM_ICON_DISABLED;
-static int old_perc = 0;
-
 static void update_operator(const char* operator)
 {
-    if (operator)
-        idlescreen_update_operator(operator);
-    else
-        idlescreen_update_operator(_("(No service)"));
+    if (!operator)
+        operator = _("(No service)");
+
+    idlescreen_update_operator(operator);
+    notify_window_update_operator(operator);
 }
 
 static void update_icon(Evas_Object* gsm)
@@ -340,16 +338,6 @@ void gsm_applet_set_icon(Evas_Object* gsm, GsmIcon icon)
 
     }
 
-    if (old_icon == icon && old_perc == perc) {
-        g_debug("FIXME working around elm_icon bug - not setting GSM icon");
-        g_free(ic);
-        return;
-    }
-
-    g_debug("Setting GSM icon to %d, signal %d (old icon %d, old signal %d)\nfilename=%s", icon, perc, old_icon, old_perc, ic);
-    old_icon = icon;
-    old_perc = perc;
-
     if (ic != NULL) {
         elm_icon_file_set(gsm, ic, NULL);
         g_free(ic);
@@ -365,26 +353,6 @@ void gsm_applet_set_icon(Evas_Object* gsm, GsmIcon icon)
         evas_object_size_hint_min_set(gsm, ICON_SIZE, ICON_SIZE);
     }
 }
-
-#if 0
-static gboolean next_icon(gpointer applet)
-{
-    Evas_Object* gsm = applet;
-    static GsmIcon current_icon = GSM_ICON_DISABLED;
-
-    gsm_applet_set_icon(gsm, current_icon);
-
-    current_icon++;
-    if (current_icon > GSM_ICON_ONLINE) {
-        current_icon = GSM_ICON_ONLINE;
-        signal_strength += 20;
-        if (signal_strength > 100)
-            signal_strength = 0;
-    }
-
-    return TRUE;
-}
-#endif
 
 Evas_Object* gsm_applet_new(MokoPanel* panel)
 {
