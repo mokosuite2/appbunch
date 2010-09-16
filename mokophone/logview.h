@@ -5,9 +5,7 @@
 #include <Elementary.h>
 #include "callsdb.h"
 
-CallEntry* logview_add_call(gint64 id, CallDirection direction, const char* peer,
-    guint64 timestamp, guint64 duration,
-    gboolean answered, gboolean is_new);
+void logview_add_call(CallEntry* e);
 
 Evas_Object* logview_make_section(void);
 Evas_Object* logview_make_menu(void);

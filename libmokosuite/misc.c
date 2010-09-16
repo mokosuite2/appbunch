@@ -44,6 +44,15 @@ GValue* g_value_from_string(const char* string)
     return value;
 }
 
+GValue* g_value_from_int(int number)
+{
+    GValue* value = g_new0(GValue, 1);
+    g_value_init(value, G_TYPE_INT);
+    g_value_set_int(value, number);
+
+    return value;
+}
+
 guint64 get_current_time(void)
 {
     GTimeVal tv = {0};

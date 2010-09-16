@@ -257,6 +257,14 @@ static gboolean update_timer(gpointer data)
     return TRUE;
 }
 
+static void call_added(CallEntry* e, gpointer userdata)
+{
+    // aggiungi alla lista
+    logview_add_call(e);
+
+    insert_call_post(PHONE_CALL_BLOCK(userdata));
+}
+
 static gboolean insert_call(gpointer data)
 {
     PhoneCallBlock *c = PHONE_CALL_BLOCK(data);
@@ -271,30 +279,19 @@ static gboolean insert_call(gpointer data)
         (c->old_status == CALL_STATUS_OUTGOING || c->old_status < 0) ?
         DIRECTION_OUTGOING : DIRECTION_INCOMING);
 
-    gint64 id = callsdb_new_call(
+    // il callback segnalera' la nuova chiamata al logview
+    callsdb_new_call(
         (c->old_status == CALL_STATUS_OUTGOING || c->old_status < 0) ?
         DIRECTION_OUTGOING : DIRECTION_INCOMING,
         c->peer,
         c->timestamp,
         c->duration,
         c->answered,
-        (c->old_status == CALL_STATUS_INCOMING && !c->answered)
+        (c->old_status == CALL_STATUS_INCOMING && !c->answered),
+        // callback
+        call_added, c
     );
 
-    if (!id)
-        g_warning("Error adding new call in database for call %d", c->id);
-
-    // aggiungi alla lista
-    logview_add_call(id, (c->old_status == CALL_STATUS_OUTGOING || c->old_status < 0) ?
-        DIRECTION_OUTGOING : DIRECTION_INCOMING,
-        c->peer,
-        c->timestamp,
-        c->duration,
-        c->answered,
-        (c->old_status == CALL_STATUS_INCOMING && !c->answered)
-    );
-
-    insert_call_post(c);
     return FALSE;
 }
 

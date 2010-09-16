@@ -48,11 +48,11 @@ typedef void (*CallEntryFunc)(CallEntry*, gpointer);
 
 void callsdb_foreach_call(CallEntryFunc func, gpointer data);
 
-CallEntry* callsdb_get_call(gint64 id);
-
-gint64 callsdb_new_call(CallDirection direction, const char* peer,
+void callsdb_new_call(CallDirection direction, const char* peer,
     guint64 timestamp, guint64 duration,
-    gboolean answered, gboolean is_new);
+    gboolean answered, gboolean is_new,
+    CallEntryFunc func,
+    gpointer userdata);
 
 void callsdb_set_call_new(gint64 id, gboolean is_new);
 

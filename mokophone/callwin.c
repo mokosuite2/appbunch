@@ -25,6 +25,8 @@
 // suoneria predefinita
 #define CALL_DEFAULT_RINGTONE           "/usr/share/sounds/ringtone_ringnroll.wav"
 
+#define CALL_LED_PATH                   "/org/freesmartphone/Device/LED/gta02_red_aux"
+
 #include <glib/gi18n-lib.h>
 
 /* finestra principale */
@@ -81,7 +83,7 @@ static void call_notification_start(gboolean in_call)
     }
 
     // blinka aux led
-    odeviced_led_set_blinking("gta02_aux_red", 100, 1000, NULL, NULL);
+    odeviced_led_set_blinking(CALL_LED_PATH, 100, 1000, NULL, NULL);
 }
 
 /**
@@ -103,7 +105,7 @@ static void call_notification_stop()
     }
 
     // ferma aux led
-    odeviced_led_set_brightness("gta02_aux_red", 0, NULL, NULL);
+    odeviced_led_set_brightness(CALL_LED_PATH, 0, NULL, NULL);
 }
 
 static void call_notification_settings(MokoSettingsService *object, const char *key, const char *value)

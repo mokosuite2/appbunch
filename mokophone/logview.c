@@ -264,23 +264,8 @@ static void log_process_call(CallEntry* call, gpointer data)
 }
 
 /* aggiunge una chiamata alla lista */
-CallEntry* logview_add_call(gint64 id, CallDirection direction, const char* peer,
-    guint64 timestamp, guint64 duration,
-    gboolean answered, gboolean is_new)
+void logview_add_call(CallEntry* e)
 {
-    CallEntry *e = g_new0(CallEntry, 1);
-
-    e->id = id;
-
-    e->peer = g_strdup(peer);
-    e->direction = direction;
-
-    e->timestamp = timestamp;
-    e->duration = duration;
-
-    e->answered = answered;
-    e->is_new = is_new;
-
     /* TODO ricerca binaria nella lista per trovare con meno passi possibili */
 
     // lookup!
@@ -299,15 +284,15 @@ CallEntry* logview_add_call(gint64 id, CallDirection direction, const char* peer
     e->data = it;
 
     // chiamata persa?
-    if (direction == DIRECTION_INCOMING && !answered) {
+    if (e->direction == DIRECTION_INCOMING && !e->answered) {
         char* text;
         if (e->data2 != NULL) {
             ContactField* f = contactsdb_get_first_field((ContactEntry *) e->data2, CONTACT_FIELD_NAME);
-            text = g_strdup_printf(_("Missed call from %s - %s"), (f != NULL) ? f->value : _("(no name)"), peer);
+            text = g_strdup_printf(_("Missed call from %s - %s"), (f != NULL) ? f->value : _("(no name)"), e->peer);
         }
 
         else
-            text = g_strdup_printf(_("Missed call from %s"), peer);
+            text = g_strdup_printf(_("Missed call from %s"), e->peer);
 
         e->data3 = GINT_TO_POINTER(moko_notifications_push(panel_notifications, text,
             MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL, MOKOPANEL_NOTIFICATION_FLAG_REPRESENT, NULL));
@@ -315,9 +300,6 @@ CallEntry* logview_add_call(gint64 id, CallDirection direction, const char* peer
         g_free(text);
         lostcall_ids = g_slist_append(lostcall_ids, e->data3);
     }
-
-
-    return e;
 }
 
 /* costruisce la sezione log */

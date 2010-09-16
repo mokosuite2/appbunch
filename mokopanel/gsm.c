@@ -153,7 +153,7 @@ static void get_signal_strength_callback(GError *error, int strength, gpointer d
     update_icon(gsm);
 }
 
-static void get_functionality_callback(GError* error, char* level, gboolean autoregister, char* pin, gpointer data)
+static void get_functionality_callback(GError* error, const char* level, gboolean autoregister, const char* pin, gpointer data)
 {
     Evas_Object* gsm = (Evas_Object *) data;
 
