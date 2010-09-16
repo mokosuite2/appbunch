@@ -8,6 +8,8 @@
 const char* fso_get_attribute(GHashTable* properties, const char* key);
 int fso_get_attribute_int(GHashTable* properties, const char* key);
 
+void g_value_free(gointer data);
+
 GValue* g_value_from_string(const char* string);
 GValue* g_value_from_int(int number);
 

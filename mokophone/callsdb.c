@@ -90,7 +90,7 @@ void callsdb_foreach_call(CallEntryFunc func, gpointer data)
     query_data_t* cbdata = g_new0(query_data_t, 1);
 
     cbdata->timer = g_timer_new();
-    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
     cbdata->userdata = data;
     cbdata->func = func;
 
@@ -155,7 +155,7 @@ void callsdb_new_call(CallDirection direction, const char* peer,
     cbdata->timer = g_timer_new();
     cbdata->func = func;
     cbdata->userdata = userdata;
-    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
 
     // popola dati per l'inserimento
     g_hash_table_insert(cbdata->query, g_strdup("Direction"),
@@ -218,7 +218,7 @@ void callsdb_set_call_new(gint64 id, gboolean is_new)
 
     set_call_new_data_t* cbdata = g_new0(set_call_new_data_t, 1);
     cbdata->timer = g_timer_new();
-    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
 
     g_hash_table_insert(cbdata->query, g_strdup("New"), g_value_from_int(is_new));
 
