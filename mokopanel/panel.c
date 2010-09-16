@@ -34,6 +34,8 @@
 
 #define MOKO_PANEL_NOTIFICATIONS_PATH    "/org/mokosuite/Panel/0/Notifications"
 
+static Evas_Object* lbldate = NULL;
+
 static void process_notification_queue(gpointer data);
 
 static void _panel_mouse_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
@@ -64,7 +66,15 @@ static void free_notification(gpointer data)
 
 static gboolean do_pop_text_notification(gpointer data)
 {
-    evas_object_del((Evas_Object *) data);
+    MokoPanel* panel = (MokoPanel *) evas_object_data_get((Evas_Object*) data, "panel");
+    if (lbldate == NULL)
+        elm_pager_content_pop(panel->pager);
+    else {
+        evas_object_del((Evas_Object *) data);
+        // abbiamo la finestra delle notifiche aperta, svuota la coda
+        g_queue_clear(panel->queue);
+    }
+
     return FALSE;
 }
 
@@ -79,8 +89,8 @@ static gboolean pop_text_notification(gpointer data)
     // se c'e' dell'altro, continua a processare
     if (panel->queue->length > 0)
         process_notification_queue(panel);
-    else
-        elm_pager_content_promote(panel->pager, panel->hbox);
+    //else
+    //    elm_pager_content_promote(panel->pager, panel->hbox);
 
     g_timeout_add(500, do_pop_text_notification, obj);
 
@@ -131,10 +141,12 @@ static void process_notification_queue(gpointer data)
 
     elm_box_pack_end(msgbox, lmsg);
 
-    elm_pager_content_push(panel->pager, msgbox);
+    if (lbldate == NULL) {
+        elm_pager_content_push(panel->pager, msgbox);
 
-    // aggiungi il timeout per la rimozione
-    g_timeout_add_seconds(3, pop_text_notification, msgbox);
+        // aggiungi il timeout per la rimozione
+        g_timeout_add_seconds(3, pop_text_notification, msgbox);
+    }
 
     // libera tutto
     g_free(in_data[0]);
@@ -178,8 +190,6 @@ static void push_represent(MokoPanel* panel, int id, const char* text, const cha
     g_queue_push_tail(panel->represent, data);
 }
 
-static Evas_Object* lbldate = NULL;
-
 /**
  * Gestore degli eventi del pannello predefinito.
  */
@@ -201,7 +211,8 @@ void mokopanel_event(MokoPanel* panel, int event, gpointer data)
 
         case MOKOPANEL_CALLBACK_NOTIFICATION_HIDE:
             if (lbldate) {
-                evas_object_del(lbldate);
+                //evas_object_del(lbldate);
+                elm_pager_content_pop(panel->pager);
                 lbldate = NULL;
             }
 
