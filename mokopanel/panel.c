@@ -34,7 +34,12 @@
 
 #define MOKO_PANEL_NOTIFICATIONS_PATH    "/org/mokosuite/Panel/0/Notifications"
 
+// label data
 static Evas_Object* lbldate = NULL;
+static gboolean lbldate_pushed = FALSE;
+
+// oggetto top da mostrare alla fine delle notifiche
+static Evas_Object* topmost = NULL;
 
 static void process_notification_queue(gpointer data);
 
@@ -66,15 +71,7 @@ static void free_notification(gpointer data)
 
 static gboolean do_pop_text_notification(gpointer data)
 {
-    MokoPanel* panel = (MokoPanel *) evas_object_data_get((Evas_Object*) data, "panel");
-    if (lbldate == NULL)
-        elm_pager_content_pop(panel->pager);
-    else {
-        evas_object_del((Evas_Object *) data);
-        // abbiamo la finestra delle notifiche aperta, svuota la coda
-        g_queue_clear(panel->queue);
-    }
-
+    evas_object_del((Evas_Object *) data);
     return FALSE;
 }
 
@@ -89,8 +86,14 @@ static gboolean pop_text_notification(gpointer data)
     // se c'e' dell'altro, continua a processare
     if (panel->queue->length > 0)
         process_notification_queue(panel);
-    //else
-    //    elm_pager_content_promote(panel->pager, panel->hbox);
+    else {
+        if (topmost == lbldate && !lbldate_pushed) {
+            evas_object_show(topmost);
+            elm_pager_content_push(panel->pager, lbldate);
+        }
+
+        elm_pager_content_promote(panel->pager, topmost);
+    }
 
     g_timeout_add(500, do_pop_text_notification, obj);
 
@@ -141,12 +144,10 @@ static void process_notification_queue(gpointer data)
 
     elm_box_pack_end(msgbox, lmsg);
 
-    if (lbldate == NULL) {
-        elm_pager_content_push(panel->pager, msgbox);
+    elm_pager_content_push(panel->pager, msgbox);
 
-        // aggiungi il timeout per la rimozione
-        g_timeout_add_seconds(3, pop_text_notification, msgbox);
-    }
+    // aggiungi il timeout per la rimozione
+    g_timeout_add_seconds(3, pop_text_notification, msgbox);
 
     // libera tutto
     g_free(in_data[0]);
@@ -199,21 +200,28 @@ void mokopanel_event(MokoPanel* panel, int event, gpointer data)
 
     switch (event) {
         case MOKOPANEL_CALLBACK_NOTIFICATION_START:
-            lbldate = elm_label_add(panel->win);
-            elm_label_label_set(lbldate, " <b>2010-04-06</b>");
+            if (lbldate == NULL) {
+                lbldate = elm_label_add(panel->win);
+                elm_label_label_set(lbldate, " <b>2010-04-06</b>");
+                evas_object_data_set(lbldate, "panel", panel);
 
-            evas_object_size_hint_weight_set (lbldate, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-            evas_object_size_hint_align_set (lbldate, EVAS_HINT_FILL, EVAS_HINT_FILL);
-            evas_object_show(lbldate);
-            elm_pager_content_push(panel->pager, lbldate);
+                evas_object_size_hint_weight_set (lbldate, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+                evas_object_size_hint_align_set (lbldate, EVAS_HINT_FILL, EVAS_HINT_FILL);
+            }
+
+            if (elm_pager_content_top_get(panel->pager) == panel->hbox) {
+                lbldate_pushed = TRUE;
+                evas_object_show(lbldate);
+                elm_pager_content_push(panel->pager, lbldate);
+            }
+            topmost = lbldate;
 
             break;
 
         case MOKOPANEL_CALLBACK_NOTIFICATION_HIDE:
-            if (lbldate) {
-                //evas_object_del(lbldate);
-                elm_pager_content_pop(panel->pager);
-                lbldate = NULL;
+            topmost = panel->hbox;
+            if (lbldate && elm_pager_content_top_get(panel->pager) == lbldate) {
+                elm_pager_content_promote(panel->pager, topmost);
             }
 
             break;
@@ -444,7 +452,7 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     elm_layout_content_set(panel->layout, "content", panel->pager);
 
     /* hbox principale */
-    panel->hbox = elm_box_add(panel->win);
+    panel->hbox = topmost = elm_box_add(panel->win);
     elm_box_horizontal_set(panel->hbox, TRUE);
     evas_object_size_hint_weight_set (panel->hbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
     evas_object_show(panel->hbox);
