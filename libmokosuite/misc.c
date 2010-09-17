@@ -35,7 +35,7 @@ int fso_get_attribute_int(GHashTable* properties, const char* key)
     return value;
 }
 
-void g_value_free(gointer data)
+void g_value_free(gpointer data)
 {
     GValue* value = data;
     g_value_unset(value);
