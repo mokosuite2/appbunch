@@ -9,7 +9,7 @@ PV = "1.0+gitr${SRCPV}"
 PR = "r1"
 SRCREV = "719a200354d9b7aa825de75d19169067fd4871b0"
 
-SRC_URI = "git://git.gitorious.org/mokosuite2/appbunch.git;proto=http"
+SRC_URI = "git://gitorious.org/mokosuite2/appbunch.git;protocol=git"
 S = "${WORKDIR}/appbunch"
 
 PARALLEL_MAKE = ""
