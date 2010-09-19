@@ -10,9 +10,7 @@ mokohome_SOURCES = \
 	launchers.c \
 	launchers.h \
 	widgets.c \
-	widgets.h \
-	input.c \
-	input.h
+	widgets.h
 
 mokohome_LDADD = \
 	-L../libmokosuite -lmokosuite $(FAKEKEY_LIBS)
