@@ -360,18 +360,6 @@ Evas_Object* logview_make_menu(void)
 
 void logview_reset_view(void)
 {
-    #if 0
-    // TODO come controllare questa cosa con opimd?
-    // se il db e' stato modificato...
-    time_t new_time = get_modification_time(callsdb_path);
-    if (new_time != callsdb_timestamp) {
-        callsdb_timestamp = new_time;
-
-        elm_genlist_clear(log_list);
-        callsdb_foreach_call(log_process_call, log_list);
-    }
-    #endif
-
     Elm_Genlist_Item *item = elm_genlist_first_item_get(log_list);
 
     if (item)

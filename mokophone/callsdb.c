@@ -23,6 +23,8 @@ typedef struct {
     char* path;
 } query_data_t;
 
+static void _cb_query(GError* error, const char* path, gpointer userdata);
+
 static void _cb_next(GError* error, GHashTable* row, gpointer userdata)
 {
     query_data_t* data = userdata;
@@ -65,22 +67,40 @@ static void _cb_next(GError* error, GHashTable* row, gpointer userdata)
     opimd_callquery_get_result(data->path, _cb_next, data);
 }
 
+static gboolean _retry_query(gpointer userdata)
+{
+    query_data_t* data = userdata;
+    g_timer_start(data->timer);
+
+    opimd_calls_query(data->query, _cb_query, data);
+    return FALSE;
+}
+
 static void _cb_query(GError* error, const char* path, gpointer userdata)
 {
     query_data_t* data = userdata;
-    g_debug("[%s] query took %f seconds", __func__, g_timer_elapsed(data->timer, NULL));
-    g_hash_table_destroy(data->query);
+    g_debug("[callsdb_foreach_call] query took %f seconds", g_timer_elapsed(data->timer, NULL));
 
     if (error) {
-        g_debug("[%s] Call query error: %s", __func__, error->message);
+        g_debug("[callsdb_foreach_call] Call query error: (%d) %s", error->code, error->message);
+
+        // opimd non ancora caricato? Riprova in 5 secondi
+        if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE)) {
+            g_timeout_add_seconds(5, _retry_query, data);
+            return;
+        }
+
+        g_hash_table_destroy(data->query);
+        g_timer_destroy(data->timer);
         g_free(data);
         return;
     }
 
+    g_hash_table_destroy(data->query);
+
     data->path = g_strdup(path);
     opimd_callquery_get_result(data->path, _cb_next, data);
 }
-
 
 void callsdb_foreach_call(CallEntryFunc func, gpointer data)
 {
@@ -264,4 +284,3 @@ void callsdb_init(void)
     if (opimdCallsBus == NULL)
         g_warning("Unable to connect to calls database; will not be able to log calls");
 }
-
