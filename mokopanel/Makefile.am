@@ -15,6 +15,7 @@ BUILT_SOURCES = .vala.stamp
 
 .vala.stamp: $(mokopanel_VALASOURCES)
 	$(VALAC) -C $(VALAC_ARGS) $^ -H notifications-service.h
+	sed -i 's/\#include <notifications-service.h>//' notifications-service.c
 	touch $@
 
 mokopanel_VALASOURCES = \
