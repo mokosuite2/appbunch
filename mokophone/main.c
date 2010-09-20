@@ -54,13 +54,6 @@ int main(int argc, char *argv[])
     settings_service = moko_settings_service_new(MOKO_PHONE_SETTINGS_PATH, (const char *)db_path, "phone");
     g_free(db_path);
 
-
-    /* inizializza il database delle chiamate */
-    db_path = config_get_string("phone", "callsdb", CALLSDB_PATH);
-    callsdb_init(db_path);
-    g_free(db_path);
-
-
     /* inizializza il database dei contatti */
     db_path = config_get_string("phone", "contactsdb", CONTACTSDB_PATH);
     contactsdb_init(db_path);

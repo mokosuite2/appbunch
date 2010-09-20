@@ -37,9 +37,6 @@ struct _CallEntry {
 
     /* dati utente (ContactEntry) */
     gpointer data2;
-
-    /* dati utente (ID notifica panel) */
-    gpointer data3;
 };
 
 typedef struct _CallEntry CallEntry;
@@ -48,18 +45,12 @@ typedef void (*CallEntryFunc)(CallEntry*, gpointer);
 
 void callsdb_foreach_call(CallEntryFunc func, gpointer data);
 
-void callsdb_new_call(CallDirection direction, const char* peer,
-    guint64 timestamp, guint64 duration,
-    gboolean answered, gboolean is_new,
-    CallEntryFunc func,
-    gpointer userdata);
-
 void callsdb_set_call_new(gint64 id, gboolean is_new);
 
 gboolean callsdb_delete_call(gint64 id);
 
 gboolean callsdb_truncate(void);
 
-void callsdb_init();
+void callsdb_init(CallEntryFunc func, gpointer userdata);
 
 #endif  /* __CALLSDB_H */

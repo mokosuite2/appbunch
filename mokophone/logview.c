@@ -21,8 +21,6 @@ Evas_Object *log_list = NULL;
 // FIXME bug del cazzo della genlist
 static gboolean longpressed = FALSE;
 
-// notifiche chiamate perse
-static GSList* lostcall_ids = NULL;
 extern DBusGProxy* panel_notifications;
 
 /* -- sezione log -- */
@@ -245,22 +243,7 @@ static void log_process_call(CallEntry* call, gpointer data)
 
     call->data = it;
 
-    if (call->is_new && !call->answered && call->direction == DIRECTION_INCOMING) {
-        char* text;
-        if (call->data2 != NULL) {
-            ContactField* f = contactsdb_get_first_field((ContactEntry *) call->data2, CONTACT_FIELD_NAME);
-            text = g_strdup_printf(_("Missed call from %s - %s"), (f != NULL) ? f->value : _("(no name)"), call->peer);
-        }
-
-        else
-            text = g_strdup_printf(_("Missed call from %s"), call->peer);
-
-        call->data3 = GINT_TO_POINTER(moko_notifications_push(panel_notifications, text,
-            MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL, MOKOPANEL_NOTIFICATION_FLAG_REPRESENT, NULL));
-
-        g_free(text);
-        lostcall_ids = g_slist_append(lostcall_ids, call->data3);
-    }
+    // notifica chiamata persa gestita da opimd + panel
 }
 
 /* aggiunge una chiamata alla lista */
@@ -283,23 +266,7 @@ void logview_add_call(CallEntry* e)
 
     e->data = it;
 
-    // chiamata persa?
-    if (e->direction == DIRECTION_INCOMING && !e->answered) {
-        char* text;
-        if (e->data2 != NULL) {
-            ContactField* f = contactsdb_get_first_field((ContactEntry *) e->data2, CONTACT_FIELD_NAME);
-            text = g_strdup_printf(_("Missed call from %s - %s"), (f != NULL) ? f->value : _("(no name)"), e->peer);
-        }
-
-        else
-            text = g_strdup_printf(_("Missed call from %s"), e->peer);
-
-        e->data3 = GINT_TO_POINTER(moko_notifications_push(panel_notifications, text,
-            MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL, MOKOPANEL_NOTIFICATION_FLAG_REPRESENT, NULL));
-
-        g_free(text);
-        lostcall_ids = g_slist_append(lostcall_ids, e->data3);
-    }
+    // notifica chiamata persa gestita da opimd + panel
 }
 
 /* costruisce la sezione log */
@@ -333,6 +300,9 @@ Evas_Object* logview_make_section(void)
 
     evas_object_show(log_list);
 
+    // inizializza il database delle chiamate
+    callsdb_init(log_process_call, log_list);
+
     // carica subito le chiamate
     callsdb_foreach_call(log_process_call, log_list);
 
@@ -364,21 +334,4 @@ void logview_reset_view(void)
 
     if (item)
         elm_genlist_item_show(item);
-
-    // per ora annulla qui le notifiche...
-    if (lostcall_ids != NULL) {
-        GSList* iter = lostcall_ids;
-
-        while (iter) {
-            int id = GPOINTER_TO_INT(iter->data);
-            moko_notifications_remove(panel_notifications, id, NULL);
-
-            iter = iter->next;
-        }
-
-        g_slist_free(lostcall_ids);
-        lostcall_ids = NULL;
-
-        callsdb_set_call_new(-1, FALSE);
-    }
 }

@@ -13,6 +13,57 @@
 #include <freesmartphone-glib/opimd/call.h>
 #include <freesmartphone-glib/opimd/callquery.h>
 
+static CallEntry* handle_call_data(GHashTable* row)
+{
+    const char* _peer = fso_get_attribute(row, "Peer");
+
+    if (_peer != NULL) {
+        CallEntry *e = g_new0(CallEntry, 1);
+
+        e->id = fso_get_attribute_int(row, "EntryId");
+        //g_debug("[%s] Call entry id %lld", __func__, e->id);
+
+        e->peer = g_strdup(_peer);
+        const char* _direction = fso_get_attribute(row, "Direction");
+        e->direction = !strcasecmp(_direction, "in") ? DIRECTION_INCOMING : DIRECTION_OUTGOING;
+
+        e->timestamp = fso_get_attribute_int(row, "Timestamp");
+
+        const char* _duration = fso_get_attribute(row, "Duration");
+        e->duration = (_duration != NULL) ? g_ascii_strtoull(_duration, NULL, 10) : 0;
+
+        e->answered = (fso_get_attribute_int(row, "Answered") != 0);
+        e->is_new = (fso_get_attribute_int(row, "New") != 0);
+
+        return e;
+    }
+
+    return NULL;
+}
+
+typedef struct {
+    CallEntryFunc func;
+    gpointer userdata;
+} new_call_created_data_t;
+
+static void _new_call_data(GError* error, GHashTable* row, gpointer userdata)
+{
+    g_return_if_fail(error == NULL);
+
+    new_call_created_data_t* data = userdata;
+    CallEntry* e = handle_call_data(row);
+
+    // notifica la chiamata al callback
+    if (e != NULL)
+        (data->func)(e, data->userdata);
+}
+
+static void new_call_created(gpointer userdata, const char* path)
+{
+    // ottieni informazioni sulla chiamata
+    opimd_call_get_content(path, _new_call_data, userdata);
+}
+
 typedef struct {
     /* liberati subito */
     GHashTable* query;
@@ -34,33 +85,18 @@ static void _cb_next(GError* error, GHashTable* row, gpointer userdata)
         g_debug("[%s] Call log loading took %f seconds", __func__, g_timer_elapsed(data->timer, NULL));
         g_timer_destroy(data->timer);
 
+        // distruggi query
+        opimd_callquery_dispose(data->path, NULL, NULL);
+
+        // distruggi dati callback
         g_free(data->path);
         g_free(data);
         return;
     }
 
-    const char* _peer = fso_get_attribute(row, "Peer");
+    CallEntry* e = handle_call_data(row);
 
-    if (_peer != NULL) {
-        CallEntry *e = g_new0(CallEntry, 1);
-
-        e->id = fso_get_attribute_int(row, "EntryId");
-        //g_debug("[%s] Call entry id %lld", __func__, e->id);
-
-        e->peer = g_strdup(_peer);
-        const char* _direction = fso_get_attribute(row, "Direction");
-        e->direction = !strcasecmp(_direction, "in") ? DIRECTION_INCOMING : DIRECTION_OUTGOING;
-
-        e->timestamp = fso_get_attribute_int(row, "Timestamp");
-
-        const char* _duration = fso_get_attribute(row, "Duration");
-        e->duration = (_duration != NULL) ? g_ascii_strtoull(_duration, NULL, 10) : 0;
-
-        e->answered = (fso_get_attribute_int(row, "Answered") != 0);
-        e->is_new = (fso_get_attribute_int(row, "New") != 0);
-
-        //g_debug("Processing call to %s (new=%d, answered=%d, direction=%d (IN=%d, OUT=%d)",
-        //        e->peer, e->is_new, e->answered, e->direction, DIRECTION_INCOMING, DIRECTION_OUTGOING);
+    if (e != NULL) {
         (data->func)(e, data->userdata);
     }
 
@@ -121,90 +157,6 @@ void callsdb_foreach_call(CallEntryFunc func, gpointer data)
         g_value_from_int(1));
 
     opimd_calls_query(cbdata->query, _cb_query, cbdata);
-}
-
-
-typedef struct {
-    /* liberati subito */
-    GHashTable* query;
-    /* mantenuti fino alla fine */
-    GTimer* timer;
-    CallEntry* entry;
-    CallEntryFunc func;
-    gpointer userdata;
-} new_call_data_t;
-
-static void _cb_new_call(GError* error, const char* path, gpointer userdata)
-{
-    new_call_data_t* data = userdata;
-    g_debug("[callsdb_new_call] query took %f seconds", g_timer_elapsed(data->timer, NULL));
-
-    g_hash_table_destroy(data->query);
-    g_timer_destroy(data->timer);
-
-    if (error) {
-        g_debug("[callsdb_new_call] New call error: %s", error->message);
-        g_free(data->entry->peer);
-        g_free(data->entry);
-        g_free(data);
-        return;
-    }
-
-    // estrai id dal path
-    const char* last_slash = g_strrstr(path, "/");
-    if (last_slash) {
-        last_slash++;
-        data->entry->id = g_ascii_strtoll(last_slash, NULL, 10);
-    }
-
-    g_debug("[callsdb_new_call] New call created: %s", path);
-    data->func(data->entry, data->userdata);
-
-    g_free(data);
-}
-
-void callsdb_new_call(CallDirection direction, const char* peer,
-    guint64 timestamp, guint64 duration,
-    gboolean answered, gboolean is_new,
-    CallEntryFunc func,
-    gpointer userdata)
-{
-    if (opimdCallsBus == NULL) return;
-
-    new_call_data_t* cbdata = g_new0(new_call_data_t, 1);
-    cbdata->timer = g_timer_new();
-    cbdata->func = func;
-    cbdata->userdata = userdata;
-    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
-
-    // popola dati per l'inserimento
-    g_hash_table_insert(cbdata->query, g_strdup("Direction"),
-        g_value_from_string(direction == DIRECTION_INCOMING ? "in" : "out"));
-    g_hash_table_insert(cbdata->query, g_strdup("Peer"),
-        g_value_from_string(peer));
-    g_hash_table_insert(cbdata->query, g_strdup("Timestamp"),
-        g_value_from_int(timestamp));
-
-    char* _duration = g_strdup_printf("%llu", duration);
-    g_hash_table_insert(cbdata->query, g_strdup("Duration"),
-        g_value_from_string(_duration));
-    g_free(_duration);
-
-    g_hash_table_insert(cbdata->query, g_strdup("Answered"),
-        g_value_from_int(answered));
-    g_hash_table_insert(cbdata->query, g_strdup("New"),
-        g_value_from_int(is_new));
-
-    // prepara la entry per il callback
-    cbdata->entry = g_new0(CallEntry, 1);
-    cbdata->entry->direction = direction;
-    cbdata->entry->peer = g_strdup(peer);
-    cbdata->entry->timestamp = timestamp;
-    cbdata->entry->duration = duration;
-    cbdata->entry->answered = answered;
-    cbdata->entry->is_new = is_new;
-
-    opimd_calls_add(cbdata->query, _cb_new_call, cbdata);
 }
 
 
@@ -277,10 +229,15 @@ gboolean callsdb_truncate(void)
     return FALSE;
 }
 
-void callsdb_init(void)
+void callsdb_init(CallEntryFunc func, gpointer userdata)
 {
     opimd_calls_dbus_connect();
 
     if (opimdCallsBus == NULL)
         g_warning("Unable to connect to calls database; will not be able to log calls");
+
+    new_call_created_data_t* data = g_new(new_call_created_data_t, 1);
+    data->func = func;
+    data->userdata = userdata;
+    opimd_calls_new_call_connect(new_call_created, data);
 }

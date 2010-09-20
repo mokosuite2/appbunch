@@ -176,8 +176,8 @@ int main(int argc, char* argv[])
     #endif
 
     // FIXME test icone
-    mokopanel_notification_queue(main_panel, "Ciao zio come stai?", MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_MESSAGE,
-        MOKOPANEL_NOTIFICATION_FLAG_NONE);
+    //mokopanel_notification_queue(main_panel, "Ciao zio come stai?", MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_MESSAGE,
+    //    MOKOPANEL_NOTIFICATION_FLAG_NONE);
     //mokopanel_notification_queue(main_panel, "+393296061565", MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL,
     //    MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH);
     //mokopanel_notification_queue(main_panel, "+39066520498", MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL,

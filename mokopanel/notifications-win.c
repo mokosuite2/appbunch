@@ -26,9 +26,13 @@
 #include <libmokosuite/settings-service.h>
 #include <libmokosuite/misc.h>
 #include <libmokosuite/notifications.h>
+#include <freesmartphone-glib/freesmartphone-glib.h>
 #include <freesmartphone-glib/odeviced/idlenotifier.h>
 #include <freesmartphone-glib/ogsmd/call.h>
 #include <freesmartphone-glib/ousaged/usage.h>
+#include <freesmartphone-glib/opimd/calls.h>
+#include <freesmartphone-glib/opimd/callquery.h>
+#include <freesmartphone-glib/opimd/call.h>
 
 #include "panel.h"
 #include "idle.h"
@@ -180,6 +184,150 @@ static void list_calls(GError *e, GPtrArray * calls, gpointer data)
 }
 #endif
 
+typedef struct {
+    /* liberati subito */
+    GHashTable* query;
+    /* mantenuti fino alla fine */
+    gpointer userdata;
+    char* path;
+} query_data_t;
+
+static void call_query(GError* error, const char* path, gpointer userdata);
+static void call_data(GError* error, GHashTable* props, gpointer data);
+
+static void call_next(GError* error, GHashTable* row, gpointer userdata)
+{
+    query_data_t* data = userdata;
+
+    if (error) {
+        g_debug("[%s] Call row error: %s", __func__, error->message);
+
+        // distruggi query
+        opimd_callquery_dispose(data->path, NULL, NULL);
+
+        // distruggi dati callback
+        g_free(data->path);
+        g_free(data);
+        return;
+    }
+
+    // aggiungi! :)
+    call_data(NULL, row, NULL);
+
+    // prossimo risultato
+    opimd_callquery_get_result(data->path, call_next, data);
+}
+
+static gboolean retry_query(gpointer userdata)
+{
+    query_data_t* data = userdata;
+    opimd_calls_query(data->query, call_query, data);
+    return FALSE;
+}
+
+static void call_query(GError* error, const char* path, gpointer userdata)
+{
+    query_data_t* data = userdata;
+    if (error) {
+        g_debug("Missed calls query error: (%d) %s", error->code, error->message);
+
+        // opimd non ancora caricato? Riprova in 5 secondi
+        if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE)) {
+            g_timeout_add_seconds(5, retry_query, data);
+            return;
+        }
+
+        g_hash_table_destroy(data->query);
+        g_free(data);
+        return;
+    }
+
+    g_hash_table_destroy(data->query);
+
+    data->path = g_strdup(path);
+    opimd_callquery_get_result(data->path, call_next, data);
+}
+
+static void missed_calls(GError* error, gint missed, gpointer data)
+{
+    if (missed <= 0) return;
+
+    // crea query chiamate senza risposta :)
+    query_data_t* cbdata = g_new0(query_data_t, 1);
+
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
+    cbdata->userdata = data;
+
+    g_hash_table_insert(cbdata->query, g_strdup("New"),
+        g_value_from_int(1));
+    g_hash_table_insert(cbdata->query, g_strdup("Answered"),
+        g_value_from_int(0));
+    g_hash_table_insert(cbdata->query, g_strdup("Direction"),
+        g_value_from_string("in"));
+
+    opimd_calls_query(cbdata->query, call_query, cbdata);
+}
+
+static void call_update(gpointer data, GHashTable* props)
+{
+    g_debug("Call has been modified - checking New attribute");
+    // chiamata modificata - controlla new
+    if (g_hash_table_lookup(props, "New") && !fso_get_attribute_int(props, "New")) {
+        g_debug("New is 0 - removing missed call");
+        mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+    }
+}
+
+static void call_remove(gpointer data)
+{
+    // chiamata cancellata - rimuovi sicuramente
+    g_debug("Call has been deleted - removing missed call");
+    mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+}
+
+static void call_data(GError* error, GHashTable* props, gpointer data)
+{
+    if (error != NULL) {
+        g_debug("Error getting new call data: %s", error->message);
+        return;
+    }
+
+    // new
+    gboolean is_new = (fso_get_attribute_int(props, "New") != 0);
+
+    // answered
+    gboolean answered = (fso_get_attribute_int(props, "Answered") != 0);
+
+    // direction (incoming)
+    const char* _direction = fso_get_attribute(props, "Direction");
+    gboolean incoming = !strcasecmp(_direction, "in");
+
+    g_debug("New call: answered=%d, new=%d, incoming=%d",
+        answered, is_new, incoming);
+
+    if (!answered && is_new && incoming) {
+        const char* peer = fso_get_attribute(props, "Peer");
+        char* text = g_strdup_printf(_("Missed call from %s"), peer);
+
+        int id = mokopanel_notification_queue(current_panel,
+            text, MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL,
+            MOKOPANEL_NOTIFICATION_FLAG_REPRESENT);
+        g_free(text);
+
+        // connetti ai cambiamenti della chiamata per la rimozione
+        opimd_call_call_deleted_connect((char *) data, call_remove, GINT_TO_POINTER(id));
+        opimd_call_call_updated_connect((char *) data, call_update, GINT_TO_POINTER(id));
+        g_free(data);
+    }
+}
+
+static void new_call(gpointer data, const char* path)
+{
+    g_debug("New call created %s", path);
+    // ottieni dettagli chiamata per controllare se e' senza risposta
+    opimd_call_get_multiple_fields(path, "Peer,Answered,New,Direction", call_data, g_strdup(path));
+}
+
 static void _keyboard_click(void* data, Evas_Object* obj, void* event_info)
 {
     system("killall -USR1 mokowm");
@@ -269,8 +417,17 @@ static void notification_genlist_del(const void *data, Evas_Object *obj)
 
 static gboolean fso_connect(gpointer data)
 {
-    ogsmd_call_call_status_connect(call_status, NULL);
-    //ogsmd_call_list_calls(list_calls, data);
+    // call status per i cambiamenti delle chiamate
+    ogsmd_call_call_status_connect(call_status, data);
+
+    // TODO un giorno faremo anche questo -- ogsmd_call_list_calls(list_calls, data);
+
+    // nuove chiamate senza risposte :)
+    opimd_calls_new_call_connect(new_call, data);
+
+    // ottieni le chiamate senza risposta attuali
+    opimd_calls_get_new_missed_calls(missed_calls, data);
+
     return FALSE;
 }
 

@@ -1,6 +1,5 @@
 
 #include "mokophone.h"
-#include "callsdb.h"
 #include "callwin.h"
 #include "callblock.h"
 #include "logview.h"
@@ -257,14 +256,6 @@ static gboolean update_timer(gpointer data)
     return TRUE;
 }
 
-static void call_added(CallEntry* e, gpointer userdata)
-{
-    // aggiungi alla lista
-    logview_add_call(e);
-
-    insert_call_post(PHONE_CALL_BLOCK(userdata));
-}
-
 static gboolean insert_call(gpointer data)
 {
     PhoneCallBlock *c = PHONE_CALL_BLOCK(data);
@@ -275,23 +266,8 @@ static gboolean insert_call(gpointer data)
     // rimuovi l'eventuale notifica
     moko_notifications_remove(panel_notifications, c->notification_id, NULL);
 
-    g_debug("old status was %d, direction will be %d", c->old_status,
-        (c->old_status == CALL_STATUS_OUTGOING || c->old_status < 0) ?
-        DIRECTION_OUTGOING : DIRECTION_INCOMING);
-
-    // il callback segnalera' la nuova chiamata al logview
-    callsdb_new_call(
-        (c->old_status == CALL_STATUS_OUTGOING || c->old_status < 0) ?
-        DIRECTION_OUTGOING : DIRECTION_INCOMING,
-        c->peer,
-        c->timestamp,
-        c->duration,
-        c->answered,
-        (c->old_status == CALL_STATUS_INCOMING && !c->answered),
-        // callback
-        call_added, c
-    );
-
+    // tutto gestito da opimd!
+    insert_call_post(c);
     return FALSE;
 }
 
