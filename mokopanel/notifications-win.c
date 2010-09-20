@@ -60,10 +60,10 @@ const char* notification_labels[][2] = {
 
 // comandi notifiche
 const char* notification_commands[] = {
-    "/home/root/tmp/phone-activate.sh Frontend string:calls",
-    "/home/root/tmp/phone-activate.sh Frontend string:log",
+    "/usr/bin/mokophone-activate.sh Frontend string:calls",
+    "/usr/bin/mokophone-activate.sh Frontend string:log",
     "/usr/bin/phoneui-messages",
-    "/home/root/tmp/phone-activate.sh"
+    "/usr/bin/mokophone-activate.sh"
 };
 
 // ListItem notifiche
