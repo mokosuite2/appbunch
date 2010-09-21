@@ -523,6 +523,7 @@ void notify_window_init(MokoPanel* panel)
     elm_win_sticky_set(win, TRUE);
 
     evas_object_smart_callback_add(win, "focus,out", _focus_out, NULL);
+    evas_object_smart_callback_add(win, "delete,request", _focus_out, NULL);
 
     #if 0
     // FIXME FIXME FIXME!!!
