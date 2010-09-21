@@ -23,7 +23,6 @@
 #include <libmokosuite/mokosuite.h>
 #include <glib.h>
 
-//#include "input.h"
 #include "launchers.h"
 #include "desktop.h"
 
@@ -40,72 +39,33 @@ static void _close(void* data, Evas_Object* obj, void* event_info)
     edje_object_signal_emit((Evas_Object *) data, "collapse", "handle");
 }
 
-#if 0
-static Eina_Bool _cache_update(void *data, int type, void *event)
-{
-    g_debug("CACHE UPDATE");
-    return EINA_TRUE;
-}
-#endif
-
-/**
- * TODO gestire meglio root multiple (eeeh?? :O)
- */
-static Ecore_X_Window* get_zones(void)
-{
-    Ecore_X_Window *roots = NULL;
-    int num = 0, i = 0;
-
-    roots = ecore_x_window_root_list(&num);
-    if ((!roots) || (num <= 0))
-        return NULL;
-
-    // FIXME
-    return roots;
-
-    for (i = 0; i < num; i++) {
-        Ecore_X_Window *zones;
-        int count = 0;
-
-        count = ecore_x_window_prop_window_list_get(roots[i],
-            ECORE_X_ATOM_E_ILLUME_ZONE_LIST, &zones);
-
-        if (count > 1)
-            g_warning("zone count is greater than 1");
-
-        if (zones && count > 0) return zones;
-    }
-
-    return NULL;
-}
-
 int main(int argc, char* argv[])
 {
     moko_factory_init(argc, argv, PACKAGE, VERSION);
     elm_need_efreet();
 
-    Ecore_X_Window* zones = get_zones();
-    if (!zones) {
-        g_error("Unable to get illume zones. Exiting.");
+    Ecore_X_Window *roots = NULL;
+    int num = 0;
+
+    roots = ecore_x_window_root_list(&num);
+    if ((!roots) || (num <= 0)) {
+        g_error("Unable to get root window. Exiting.");
         return EXIT_FAILURE;
     }
 
-    // a quanto pare serve...
-    // TODO ecore_event_handler_add(EFREET_EVENT_DESKTOP_CACHE_UPDATE, _cache_update, NULL);
-
     int x, y, w, h;
-    ecore_x_window_geometry_get(zones[0], &x, &y, &w, &h);
+    ecore_x_window_geometry_get(roots[0], &x, &y, &w, &h);
     g_debug("w = %d, h = %d", w, h);
-    g_free(zones);
+    g_free(roots);
 
     elm_theme_overlay_add(NULL, "elm/scroller/base/desktop");
 
-    Evas_Object* win = elm_win_add(NULL, "Illume-Home", ELM_WIN_DESKTOP);
-    elm_win_title_set(win, "Illume Home");
+    Evas_Object* win = elm_win_add(NULL, "mokohome", ELM_WIN_DESKTOP);
+    elm_win_title_set(win, "Home");
     elm_win_borderless_set(win, TRUE);
     //elm_win_layer_set(win, 90);    // home layer :)
 
-    /* for not accepting focus... */
+    // for not accepting focus...
     //ecore_x_icccm_hints_set(elm_win_xwindow_get(win), 0, 0, 0, 0, 0, 0, 0);
 
     // layout principale home
@@ -113,7 +73,7 @@ int main(int argc, char* argv[])
     elm_layout_file_set(layout, MOKOSUITE_DATADIR "theme.edj", "home");
     Evas_Object* layout_edje = elm_layout_edje_get(layout);
 
-    // non funzionera' mai... :D
+    // non funzionera' mai... o forse no?
     evas_object_smart_callback_add(win, "delete,request", _close, layout_edje);
     evas_object_smart_callback_add(win, "focus,out", _close, layout_edje);
 
@@ -173,13 +133,6 @@ int main(int argc, char* argv[])
     evas_object_move(win, x, y);
     evas_object_resize(win, w, h);
     evas_object_show(win);
-
-    // input window
-    #if 1
-    //Evas_Object* input = input_win_new();
-    //evas_object_show(input);
-    //evas_object_focus_set(input, TRUE);
-    #endif
 
     return moko_factory_run();
 }

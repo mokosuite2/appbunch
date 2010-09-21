@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
     elm_theme_overlay_add(NULL, "elm/label/base/panel");
     elm_theme_overlay_add(NULL, "elm/bg/base/panel");
 
-    main_panel = mokopanel_new("Illume-Indicator", "Illume Indicator");
+    main_panel = mokopanel_new("mokopanel", "Panel");
 
     // idle screen
     idlescreen_init(main_panel);
