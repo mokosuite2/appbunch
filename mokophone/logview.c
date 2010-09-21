@@ -228,6 +228,22 @@ static void log_genlist_del(const void *data, Evas_Object *obj)
     g_free(call);
 }
 
+static void log_process_call_first(CallEntry* call, gpointer data)
+{
+    Elm_Genlist_Item_Class* cur_itc = &itc;
+    if (call->peer) {
+        call->data2 = contactsdb_lookup_number(call->peer);
+
+        if (call->data2)
+            cur_itc = &itc_sub;
+    }
+
+    call->data = elm_genlist_item_prepend((Evas_Object *) data, cur_itc, call,
+        NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+
+    // notifica chiamata persa gestita da opimd + panel
+}
+
 static void log_process_call(CallEntry* call, gpointer data)
 {
     Elm_Genlist_Item_Class* cur_itc = &itc;
@@ -238,10 +254,8 @@ static void log_process_call(CallEntry* call, gpointer data)
             cur_itc = &itc_sub;
     }
 
-    Elm_Genlist_Item *it = elm_genlist_item_append((Evas_Object *) data, cur_itc, call,
+    call->data = elm_genlist_item_append((Evas_Object *) data, cur_itc, call,
         NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
-
-    call->data = it;
 
     // notifica chiamata persa gestita da opimd + panel
 }
@@ -301,7 +315,7 @@ Evas_Object* logview_make_section(void)
     evas_object_show(log_list);
 
     // inizializza il database delle chiamate
-    callsdb_init(log_process_call, log_list);
+    callsdb_init(log_process_call_first, log_list);
 
     // carica subito le chiamate
     callsdb_foreach_call(log_process_call, log_list);

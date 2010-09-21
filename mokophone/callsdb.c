@@ -60,6 +60,8 @@ static void _new_call_data(GError* error, GHashTable* row, gpointer userdata)
 
 static void new_call_created(gpointer userdata, const char* path)
 {
+    g_debug("New call created %s", path);
+
     // ottieni informazioni sulla chiamata
     opimd_call_get_content(path, _new_call_data, userdata);
 }
