@@ -15,13 +15,8 @@ S = "${WORKDIR}/git"
 PARALLEL_MAKE = ""
 
 CFLAGS += "-DOPENMOKO"
-EXTRA_OECONF = " --enable-callsdb-sqlite --enable-contactsdb-sqlite --enable-settings-config --with-edje-cc=${STAGING_BINDIR_NATIVE}/edje_cc"
+EXTRA_OECONF = " --enable-contactsdb-sqlite --enable-settings-config --with-edje-cc=${STAGING_BINDIR_NATIVE}/edje_cc"
 FILES_${PN} += "${datadir}/mokosuite ${sysconfdir}/dbus-1 ${sysconfdir}/X11 ${sysconfdir}/mokosuite.conf {$datadir}/applications"
 CONFFILES_${PN} = "${sysconfdir}/mokosuite.conf"
 
-inherit pkgconfig autotools update-alternatives
-
-ALTERNATIVE_PATH = "${bindir}/mokosession"
-ALTERNATIVE_NAME = "x-window-manager"
-ALTERNATIVE_LINK = "${bindir}/x-window-manager"
-ALTERNATIVE_PRIORITY = "20"
+inherit pkgconfig autotools

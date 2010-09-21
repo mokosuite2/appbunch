@@ -1,10 +1,6 @@
 INCLUDES = $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(ELM_CFLAGS) $(FSO_CFLAGS) $(ALSA_CFLAGS) $(PHONEUTILS_CFLAGS) \
 	-DLOCALEDIR=\""$(localedir)"\" -DDATADIR=\""$(datadir)"\" -DSYSCONFDIR=\""$(sysconfdir)"\" -Wall
 
-if ENABLE_CALLSDB_SQLITE
-INCLUDES += $(SQLITE_CFLAGS)
-endif
-
 bin_PROGRAMS = mokophone
 dbus_sources = mokophone-service-glue.h
 
@@ -37,14 +33,6 @@ mokophone_SOURCES = $(dbus_sources) \
 
 mokophone_LDADD = \
 	$(FSO_LIBS) $(ALSA_LIBS) $(PHONEUTILS_LIBS) -L../libmokosuite -lmokosuite
-
-if ENABLE_CALLSDB_SQLITE
-mokophone_LDADD += $(SQLITE_LIBS)
-endif
-
-if ENABLE_THREADS
-mokophone_LDADD += -lgthread-2.0
-endif
 
 MAINTAINERCLEANFILES = \
 	Makefile.in

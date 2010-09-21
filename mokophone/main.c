@@ -33,10 +33,6 @@ int main(int argc, char *argv[])
 
     moko_factory_init(argc, argv, PACKAGE, VERSION);
 
-#ifdef USE_THREADS
-    g_thread_init(NULL);
-#endif
-
     /* inizializza fso */
     freesmartphone_glib_init();
 

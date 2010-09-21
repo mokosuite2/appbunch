@@ -149,18 +149,6 @@ fi
 
 AM_CONDITIONAL(ENABLE_SETTINGS_CONFIG, test "x$enable_settings_config" = "xyes")
 
-AC_ARG_ENABLE(callsdb_sqlite,
-    AC_HELP_STRING([--enable-callsdb-sqlite], [Enable SQLite usage for calls database (default: disabled)]),
-    enable_callsdb_sqlite=$enableval,
-    enable_callsdb_sqlite=no)
-
-if test "x$enable_callsdb_sqlite" != "xno"; then
-    AC_DEFINE(CALLSDB_SQLITE, 1, [Define to enable SQLite usage for calls database])
-fi
-
-AM_CONDITIONAL(ENABLE_CALLSDB_SQLITE, test "x$enable_callsdb_sqlite" = "xyes")
-
-
 AC_ARG_ENABLE(contactsdb_sqlite,
     AC_HELP_STRING([--enable-contactsdb-sqlite], [Enable SQLite usage for contacts database (default: disabled)]),
     enable_contactsdb_sqlite=$enableval,
@@ -171,18 +159,6 @@ if test "x$enable_contactsdb_sqlite" != "xno"; then
 fi
 
 AM_CONDITIONAL(ENABLE_CONTACTSDB_SQLITE, test "x$enable_contactsdb_sqlite" = "xyes")
-
-
-AC_ARG_ENABLE(threads,
-    AC_HELP_STRING([--enable-threads], [Enable threads usage for various tasks (default: disabled)]),
-    enable_threads=$enableval,
-    enable_threads=no)
-
-if test "x$enable_threads" != "xno"; then
-    AC_DEFINE(USE_THREADS, 1, [Define to use threads for various])
-fi
-
-AM_CONDITIONAL(ENABLE_THREADS, test "x$enable_threads" = "xyes")
 
 
 AC_OUTPUT([
