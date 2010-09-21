@@ -5,9 +5,9 @@ LICENSE = "GPLv3"
 DEPENDS = "mokowm elementary libfreesmartphone-glib libphone-utils eggdbus glib-2.0 dbus-glib alsa-lib db sqlite3"
 SECTION = "misc/utils"
 
-PV = "1.0+gitr${SRCPV}"
+PV = "1.0.99+gitr${SRCPV}"
 PR = "r1"
-SRCREV = "719a200354d9b7aa825de75d19169067fd4871b0"
+#SRCREV = "719a200354d9b7aa825de75d19169067fd4871b0"
 
 SRC_URI = "git://gitorious.org/mokosuite2/appbunch.git;protocol=git"
 S = "${WORKDIR}/git"

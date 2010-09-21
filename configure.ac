@@ -1,4 +1,4 @@
-AC_INIT([mokosuite], [1.0], [daniele.athome@gmail.com], [mokosuite])
+AC_INIT([mokosuite], [1.0.99], [daniele.athome@gmail.com], [mokosuite])
 AC_CONFIG_SRCDIR(Makefile.am)
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_MACRO_DIR([m4])
