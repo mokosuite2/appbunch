@@ -228,7 +228,7 @@ static void log_genlist_del(const void *data, Evas_Object *obj)
     g_free(call);
 }
 
-static void log_process_call_first(CallEntry* call, gpointer data)
+Elm_Genlist_Item_Class* log_preprocess_call(CallEntry* call)
 {
     Elm_Genlist_Item_Class* cur_itc = &itc;
     if (call->peer) {
@@ -238,22 +238,23 @@ static void log_process_call_first(CallEntry* call, gpointer data)
             cur_itc = &itc_sub;
     }
 
+    return cur_itc;
+}
+
+// richiamato all'aggiunta di una chiamata appena terminata
+static void log_process_call_first(CallEntry* call, gpointer data)
+{
+    Elm_Genlist_Item_Class* cur_itc = log_preprocess_call(call);
     call->data = elm_genlist_item_prepend((Evas_Object *) data, cur_itc, call,
         NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 
     // notifica chiamata persa gestita da opimd + panel
 }
 
+// richiamato all'aggiunta di una chiamata in caricamento dal db
 static void log_process_call(CallEntry* call, gpointer data)
 {
-    Elm_Genlist_Item_Class* cur_itc = &itc;
-    if (call->peer) {
-        call->data2 = contactsdb_lookup_number(call->peer);
-
-        if (call->data2)
-            cur_itc = &itc_sub;
-    }
-
+    Elm_Genlist_Item_Class* cur_itc = log_preprocess_call(call);
     call->data = elm_genlist_item_append((Evas_Object *) data, cur_itc, call,
         NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 
@@ -348,4 +349,6 @@ void logview_reset_view(void)
 
     if (item)
         elm_genlist_item_show(item);
+
+    // TODO imposta tutte le chiamate perse nuove a New = 0
 }
