@@ -19,6 +19,8 @@ static Evas_Object* add_button(Evas_Object* parent, Evas_Object* vbox, const cha
     evas_object_size_hint_weight_set(btn, EVAS_HINT_EXPAND, 0.0);
     evas_object_size_hint_align_set(btn, -1.0, 0.0);
 
+    evas_object_smart_callback_add(btn, "clicked", _close, NULL);
+
     elm_box_pack_end(vbox, btn);
     evas_object_show(btn);
     return btn;
@@ -40,7 +42,7 @@ static Evas_Object* add_check(Evas_Object* parent, Evas_Object* vbox, const char
 static void test_buttons()
 {
     MokoWin* win = mokowin_new("test_buttons");
-    mokowin_create_vbox(win, FALSE);
+    mokowin_create_vbox(win, TRUE);
 
     evas_object_move(win->win, 0, 0);
     evas_object_resize(win->win, 480, 640);
@@ -51,6 +53,12 @@ static void test_buttons()
     add_button(win->win, win->vbox, "Terminate");
     add_button(win->win, win->vbox, "Wait");
     add_button(win->win, win->vbox, "TEST");
+
+    Evas_Object* entry = elm_entry_add(win->win);
+    evas_object_size_hint_weight_set(entry, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set(entry, EVAS_HINT_FILL, 0.0);
+    evas_object_show(entry);
+    elm_box_pack_end(win->vbox, entry);
 
     add_check(win->win, win->vbox, NULL);
 
