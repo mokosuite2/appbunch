@@ -26,7 +26,7 @@
 #include "clock.h"
 #include "idle.h"
 
-static void label_clock_update(Evas_Object* time)
+static void label_clock_update(MokoPanel* p)
 {
     guint64 now = get_current_time();
     struct tm* timestamp_tm = localtime((const time_t*)&now);
@@ -36,7 +36,7 @@ static void label_clock_update(Evas_Object* time)
 
     char* timestr = g_strdup_printf("<b><font_size=10>%s</></b>", strf);
 
-    elm_label_label_set(time, timestr);
+    elm_label_label_set(p->time, timestr);
     idlescreen_update_time(strf);
 
     g_free(timestr);
@@ -44,7 +44,7 @@ static void label_clock_update(Evas_Object* time)
 
 static gboolean update_clock(gpointer p)
 {
-    label_clock_update(((MokoPanel*)p)->time);
+    label_clock_update((MokoPanel*) p);
 
     return TRUE;
 }
@@ -53,7 +53,7 @@ Evas_Object* clock_applet_new(MokoPanel* panel)
 {
     // orario
     Evas_Object* time = elm_label_add(panel->win);
-    label_clock_update(time);
+    label_clock_update(panel);
     evas_object_show(time);
 
     // timer refresh orario

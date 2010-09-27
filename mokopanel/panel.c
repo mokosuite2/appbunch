@@ -34,13 +34,6 @@
 
 #define MOKO_PANEL_NOTIFICATIONS_PATH    "/org/mokosuite/Panel/0/Notifications"
 
-// label data
-static Evas_Object* lbldate = NULL;
-static gboolean lbldate_pushed = FALSE;
-
-// oggetto top da mostrare alla fine delle notifiche
-static Evas_Object* topmost = NULL;
-
 static void process_notification_queue(gpointer data);
 
 static void _panel_mouse_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
@@ -87,12 +80,12 @@ static gboolean pop_text_notification(gpointer data)
     if (panel->queue->length > 0)
         process_notification_queue(panel);
     else {
-        if (topmost == lbldate && !lbldate_pushed) {
-            evas_object_show(topmost);
-            elm_pager_content_push(panel->pager, lbldate);
+        if (panel->topmost == panel->date && !panel->date_pushed) {
+            evas_object_show(panel->topmost);
+            elm_pager_content_push(panel->pager, panel->date);
         }
 
-        elm_pager_content_promote(panel->pager, topmost);
+        elm_pager_content_promote(panel->pager, panel->topmost);
     }
 
     g_timeout_add(500, do_pop_text_notification, obj);
@@ -200,28 +193,36 @@ void mokopanel_event(MokoPanel* panel, int event, gpointer data)
 
     switch (event) {
         case MOKOPANEL_CALLBACK_NOTIFICATION_START:
-            if (lbldate == NULL) {
-                lbldate = elm_label_add(panel->win);
-                elm_label_label_set(lbldate, " <b>2010-04-06</b>");
-                evas_object_data_set(lbldate, "panel", panel);
+            if (panel->date == NULL) {
+                panel->date = elm_label_add(panel->win);
 
-                evas_object_size_hint_weight_set (lbldate, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-                evas_object_size_hint_align_set (lbldate, EVAS_HINT_FILL, EVAS_HINT_FILL);
+                evas_object_data_set(panel->date, "panel", panel);
+                evas_object_size_hint_weight_set (panel->date, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+                evas_object_size_hint_align_set (panel->date, EVAS_HINT_FILL, EVAS_HINT_FILL);
             }
+
+            // update date label
+            guint64 now = get_current_time();
+            struct tm* timestamp_tm = localtime((const time_t*)&now);
+            char strf[50+1] = {0, };
+            strftime(strf, 50, "%Y-%m-%d", timestamp_tm);
+            char* datestr = g_strdup_printf(" <b>%s</b>", strf);
+            elm_label_label_set(panel->date, datestr);
+            g_free(datestr);
 
             if (elm_pager_content_top_get(panel->pager) == panel->hbox) {
-                lbldate_pushed = TRUE;
-                evas_object_show(lbldate);
-                elm_pager_content_push(panel->pager, lbldate);
+                panel->date_pushed = TRUE;
+                evas_object_show(panel->date);
+                elm_pager_content_push(panel->pager, panel->date);
             }
-            topmost = lbldate;
+            panel->topmost = panel->date;
 
             break;
 
         case MOKOPANEL_CALLBACK_NOTIFICATION_HIDE:
-            topmost = panel->hbox;
-            if (lbldate && elm_pager_content_top_get(panel->pager) == lbldate) {
-                elm_pager_content_promote(panel->pager, topmost);
+            panel->topmost = panel->hbox;
+            if (panel->date && elm_pager_content_top_get(panel->pager) == panel->date) {
+                elm_pager_content_promote(panel->pager, panel->topmost);
             }
 
             break;
@@ -452,7 +453,7 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     elm_layout_content_set(panel->layout, "content", panel->pager);
 
     /* hbox principale */
-    panel->hbox = topmost = elm_box_add(panel->win);
+    panel->hbox = panel->topmost = elm_box_add(panel->win);
     elm_box_horizontal_set(panel->hbox, TRUE);
     evas_object_size_hint_weight_set (panel->hbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
     evas_object_show(panel->hbox);

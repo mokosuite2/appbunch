@@ -47,11 +47,18 @@ struct _MokoPanel {
     /* orologio */
     Evas_Object* time;
 
+    /* data */
+    Evas_Object* date;
+    gboolean date_pushed;
+
     /* batteria */
     Evas_Object* battery;
 
     /* gsm */
     Evas_Object* gsm;
+
+    /* oggetto in primo piano */
+    Evas_Object* topmost;
 
     /* lista icone di notifica in prima pagina */
     GPtrArray* list;
