@@ -33,6 +33,9 @@
 #include <freesmartphone-glib/opimd/calls.h>
 #include <freesmartphone-glib/opimd/callquery.h>
 #include <freesmartphone-glib/opimd/call.h>
+#include <freesmartphone-glib/opimd/messagequery.h>
+#include <freesmartphone-glib/opimd/messages.h>
+#include <freesmartphone-glib/opimd/message.h>
 
 #include "panel.h"
 #include "idle.h"
@@ -218,7 +221,7 @@ static void call_next(GError* error, GHashTable* row, gpointer userdata)
     opimd_callquery_get_result(data->path, call_next, data);
 }
 
-static gboolean retry_query(gpointer userdata)
+static gboolean retry_call_query(gpointer userdata)
 {
     query_data_t* data = userdata;
     opimd_calls_query(data->query, call_query, data);
@@ -233,7 +236,7 @@ static void call_query(GError* error, const char* path, gpointer userdata)
 
         // opimd non ancora caricato? Riprova in 5 secondi
         if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE)) {
-            g_timeout_add_seconds(5, retry_query, data);
+            g_timeout_add_seconds(5, retry_call_query, data);
             return;
         }
 
@@ -292,6 +295,8 @@ static void call_data(GError* error, GHashTable* props, gpointer data)
         return;
     }
 
+    const char* path = fso_get_attribute(props, "Path");
+
     // new
     gboolean is_new = (fso_get_attribute_int(props, "New") != 0);
 
@@ -315,9 +320,8 @@ static void call_data(GError* error, GHashTable* props, gpointer data)
         g_free(text);
 
         // connetti ai cambiamenti della chiamata per la rimozione
-        opimd_call_call_deleted_connect((char *) data, call_remove, GINT_TO_POINTER(id));
-        opimd_call_call_updated_connect((char *) data, call_update, GINT_TO_POINTER(id));
-        g_free(data);
+        opimd_call_call_deleted_connect((char *) path, call_remove, GINT_TO_POINTER(id));
+        opimd_call_call_updated_connect((char *) path, call_update, GINT_TO_POINTER(id));
     }
 }
 
@@ -325,7 +329,139 @@ static void new_call(gpointer data, const char* path)
 {
     g_debug("New call created %s", path);
     // ottieni dettagli chiamata per controllare se e' senza risposta
-    opimd_call_get_multiple_fields(path, "Peer,Answered,New,Direction", call_data, g_strdup(path));
+    opimd_call_get_multiple_fields(path, "Path,Peer,Answered,New,Direction", call_data, NULL);
+}
+
+static void message_query(GError* error, const char* path, gpointer userdata);
+static void message_data(GError* error, GHashTable* props, gpointer data);
+
+// solo per messaggi non letti :)
+static void message_next(GError* error, GHashTable* row, gpointer userdata)
+{
+    query_data_t* data = userdata;
+
+    if (error) {
+        g_debug("[%s] Message row error: %s", __func__, error->message);
+
+        // distruggi query
+        opimd_messagequery_dispose(data->path, NULL, NULL);
+
+        // distruggi dati callback
+        g_free(data->path);
+        g_free(data);
+        return;
+    }
+
+    // aggiungi! :)
+    message_data(NULL, row, NULL);
+
+    // prossimo risultato
+    opimd_messagequery_get_result(data->path, message_next, data);
+}
+
+static gboolean retry_message_query(gpointer userdata)
+{
+    query_data_t* data = userdata;
+    opimd_calls_query(data->query, message_query, data);
+    return FALSE;
+}
+
+static void message_query(GError* error, const char* path, gpointer userdata)
+{
+    query_data_t* data = userdata;
+    if (error) {
+        g_debug("Message query error: (%d) %s", error->code, error->message);
+
+        // opimd non ancora caricato? Riprova in 5 secondi
+        if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE)) {
+            g_timeout_add_seconds(5, retry_message_query, data);
+            return;
+        }
+
+        g_hash_table_destroy(data->query);
+        g_free(data);
+        return;
+    }
+
+    g_hash_table_destroy(data->query);
+
+    data->path = g_strdup(path);
+    opimd_messagequery_get_result(data->path, message_next, data);
+}
+
+static void unread_messages(GError* error, gint unread, gpointer data)
+{
+    if (unread <= 0) return;
+
+    // crea query messaggi entranti non letti
+    query_data_t* cbdata = g_new0(query_data_t, 1);
+
+    cbdata->query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_value_free);
+    cbdata->userdata = data;
+
+    g_hash_table_insert(cbdata->query, g_strdup("MessageRead"),
+        g_value_from_int(0));
+    g_hash_table_insert(cbdata->query, g_strdup("Direction"),
+        g_value_from_string("in"));
+
+    opimd_messages_query(cbdata->query, message_query, cbdata);
+}
+
+static void message_update(gpointer data, GHashTable* props)
+{
+    g_debug("Message has been modified - checking MessageRead attribute");
+    // chiamata modificata - controlla read
+    if (g_hash_table_lookup(props, "MessageRead") && fso_get_attribute_bool(props, "MessageRead", TRUE)) {
+        g_debug("MessageRead is 1 - removing message");
+        mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+    }
+}
+
+static void message_remove(gpointer data)
+{
+    // messaggio cancellato - rimuovi sicuramente
+    g_debug("Message has been deleted - removing unread message");
+    mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+}
+
+static void message_data(GError* error, GHashTable* props, gpointer data)
+{
+    if (error != NULL) {
+        g_debug("Error getting new message data: %s", error->message);
+        return;
+    }
+
+    const char* path = fso_get_attribute(props, "Path");
+
+    // read
+    gboolean is_read = (fso_get_attribute_bool(props, "MessageRead", TRUE) != 0);
+
+    // direction (incoming)
+    const char* _direction = fso_get_attribute(props, "Direction");
+    gboolean incoming = !strcasecmp(_direction, "in");
+
+    g_debug("New message: read=%d, incoming=%d",
+        is_read, incoming);
+
+    if (!is_read && incoming) {
+        const char* peer = fso_get_attribute(props, "Peer");
+        char* text = g_strdup_printf(_("New message from %s"), peer);
+
+        int id = mokopanel_notification_queue(current_panel,
+            text, MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_MESSAGE,
+            MOKOPANEL_NOTIFICATION_FLAG_REPRESENT);
+        g_free(text);
+
+        // connetti ai cambiamenti della chiamata per la rimozione
+        opimd_message_message_deleted_connect((char *) path, message_remove, GINT_TO_POINTER(id));
+        opimd_message_message_updated_connect((char *) path, message_update, GINT_TO_POINTER(id));
+    }
+}
+
+static void new_incoming_message(gpointer data, const char* path)
+{
+    g_debug("New incoming message %s", path);
+    opimd_message_get_multiple_fields(path, "Path,Peer,Direction,MessageRead,Content", message_data, NULL);
 }
 
 static void _keyboard_click(void* data, Evas_Object* obj, void* event_info)
@@ -427,6 +563,12 @@ static gboolean fso_connect(gpointer data)
 
     // ottieni le chiamate senza risposta attuali
     opimd_calls_get_new_missed_calls(missed_calls, data);
+
+    // nuovi messaggi entranti
+    opimd_messages_incoming_message_connect(new_incoming_message, data);
+
+    // ottieni i messaggi entranti non letti attuali
+    opimd_messages_get_unread_messages(unread_messages, data);
 
     return FALSE;
 }

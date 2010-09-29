@@ -16,8 +16,10 @@ const char* fso_get_attribute(GHashTable* properties, const char* key)
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
+    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
 
-    if (gval != NULL) value = g_value_get_string(gval);
+    if (gval != NULL && G_VALUE_HOLDS_STRING(gval))
+        value = g_value_get_string(gval);
 
     return value;
 }
@@ -28,9 +30,28 @@ int fso_get_attribute_int(GHashTable* properties, const char* key)
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
-    //g_debug("Type=%s", G_VALUE_TYPE_NAME(gval));
+    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
 
-    if (gval != NULL) value = g_value_get_int(gval);
+    if (gval != NULL && G_VALUE_HOLDS_INT(gval))
+        value = g_value_get_int(gval);
+
+    return value;
+}
+
+gboolean fso_get_attribute_bool(GHashTable* properties, const char* key, gboolean fallback_int)
+{
+    gboolean value = FALSE;
+    GValue* gval = NULL;
+
+    gval = g_hash_table_lookup(properties, key);
+    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
+
+    if (gval != NULL) {
+        if (G_VALUE_HOLDS_BOOLEAN(gval))
+            value = g_value_get_boolean(gval);
+        else if (fallback_int && G_VALUE_HOLDS_INT(gval))
+            value = g_value_get_int(gval);
+    }
 
     return value;
 }

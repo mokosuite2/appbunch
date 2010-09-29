@@ -7,6 +7,7 @@
 
 const char* fso_get_attribute(GHashTable* properties, const char* key);
 int fso_get_attribute_int(GHashTable* properties, const char* key);
+gboolean fso_get_attribute_bool(GHashTable* properties, const char* key, gboolean fallback_int);
 
 void g_value_free(gpointer data);
 
