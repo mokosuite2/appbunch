@@ -23,6 +23,9 @@ static gboolean longpressed = FALSE;
 
 extern DBusGProxy* panel_notifications;
 
+// lista chiamate perse
+static GList* lost_calls = NULL;
+
 /* -- sezione log -- */
 
 static void _list_selected(void *data, Evas_Object *obj, void *event_info)
@@ -238,6 +241,10 @@ Elm_Genlist_Item_Class* log_preprocess_call(CallEntry* call)
             cur_itc = &itc_sub;
     }
 
+    // appendi l'id della chiamata alla lista se persa
+    if (!call->answered && call->is_new && call->direction == DIRECTION_INCOMING)
+        lost_calls = g_list_append(lost_calls, GINT_TO_POINTER(call->id));
+
     return cur_itc;
 }
 
@@ -350,5 +357,13 @@ void logview_reset_view(void)
     if (item)
         elm_genlist_item_show(item);
 
-    // TODO imposta tutte le chiamate perse nuove a New = 0
+    // imposta tutte le chiamate perse nuove a New = 0
+    GList* iter = lost_calls;
+    while (iter) {
+        callsdb_set_call_new(GPOINTER_TO_INT(iter->data), FALSE);
+        iter = iter->next;
+    }
+
+    g_list_free(lost_calls);
+    lost_calls = NULL;
 }

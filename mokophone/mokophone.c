@@ -77,16 +77,3 @@ gboolean moko_phone_frontend(MokoPhoneService *object, const char *section, GErr
     phone_win_activate(n_section, FALSE /*(n_section == SECTION_PHONE)*/);
     return TRUE;
 }
-
-gboolean moko_phone_list_unread_missed_calls(MokoPhoneService *object, gint64 id, const char *peer,
-    guint64 timestamp, guint64 duration, gboolean answered, GError **error)
-{
-    // TODO
-    return TRUE;
-}
-
-gboolean moko_phone_get_missed_call(MokoPhoneService *object, gint64 id, gpointer *out, GError **error)
-{
-    // TODO
-    return TRUE;
-}

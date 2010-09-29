@@ -16,7 +16,7 @@ const char* fso_get_attribute(GHashTable* properties, const char* key)
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
-    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
+    //g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
 
     if (gval != NULL && G_VALUE_HOLDS_STRING(gval))
         value = g_value_get_string(gval);
@@ -30,7 +30,7 @@ int fso_get_attribute_int(GHashTable* properties, const char* key)
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
-    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
+    //g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
 
     if (gval != NULL && G_VALUE_HOLDS_INT(gval))
         value = g_value_get_int(gval);
@@ -44,7 +44,7 @@ gboolean fso_get_attribute_bool(GHashTable* properties, const char* key, gboolea
     GValue* gval = NULL;
 
     gval = g_hash_table_lookup(properties, key);
-    g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
+    //g_debug("[%s] Type=%s", __func__, G_VALUE_TYPE_NAME(gval));
 
     if (gval != NULL) {
         if (G_VALUE_HOLDS_BOOLEAN(gval))

@@ -181,14 +181,14 @@ static void _cb_set_call_new(GError* error, gpointer userdata)
     g_free(data);
 }
 
-void callsdb_set_call_new(gint64 id, gboolean is_new)
+void callsdb_set_call_new(int id, gboolean is_new)
 {
     // FIXME FIXME bunk update FIXME FIXME
     if (id < 0) return;
 
     if (opimdCallsBus == NULL) return;
 
-    char* path = g_strdup_printf("/org/freesmartphone/PIM/Calls/%lld", id);
+    char* path = g_strdup_printf("/org/freesmartphone/PIM/Calls/%d", id);
 
     set_call_new_data_t* cbdata = g_new0(set_call_new_data_t, 1);
     cbdata->timer = g_timer_new();
@@ -209,12 +209,12 @@ static void _cb_delete(GError* error, gpointer userdata)
     g_timer_destroy(t);
 }
 
-gboolean callsdb_delete_call(gint64 id)
+gboolean callsdb_delete_call(int id)
 {
     if (opimdCallsBus == NULL) return FALSE;
 
     GTimer* t = g_timer_new();
-    char* path = g_strdup_printf("/org/freesmartphone/PIM/Calls/%lld", id);
+    char* path = g_strdup_printf("/org/freesmartphone/PIM/Calls/%d", id);
     opimd_call_delete(path, _cb_delete, t);
     g_free(path);
 

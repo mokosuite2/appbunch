@@ -47,9 +47,7 @@ struct _MokoPhoneServiceClass {
 };
 
 gboolean moko_phone_frontend(MokoPhoneService *object, const char *section, GError **error);
-gboolean moko_phone_list_unread_missed_calls(MokoPhoneService *object, gint64 id, const char *peer,
-    guint64 timestamp, guint64 duration, gboolean answered, GError **error);
-gboolean moko_phone_get_missed_call(MokoPhoneService *object, gint64 id, gpointer *out, GError **error);
+
 
 MokoPhoneService *moko_phone_service_new(void);
 
