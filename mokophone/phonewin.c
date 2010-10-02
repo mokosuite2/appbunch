@@ -358,7 +358,7 @@ void phone_win_ussd_reply(int mode, const char* message)
             moko_notifications_remove(panel_notifications, ussd_notification_id, NULL);
 
         ussd_notification_id = moko_notifications_push(panel_notifications, message,
-            MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_USSD, MOKOPANEL_NOTIFICATION_FLAG_NONE, NULL);
+            "unread-ussd", message, MOKOPANEL_NOTIFICATION_FLAG_NONE, NULL);
     }
 
     moko_popup_alert_new(win, message);
@@ -433,7 +433,11 @@ void phone_win_init(void)
 
     obj_pager = make_pager(pages);
     elm_layout_content_set(win->layout, "pager", obj_pager);
-    
+
+    // registra notifica ussd
+    moko_notifications_register_type(panel_notifications, "unread-ussd", MOKOSUITE_DATADIR "message-dock.png",
+        _("%d unread USSD message"), _("%d unread USSD messages"), TRUE, NULL);
+
     // inizia con la sezione telefono
     phone_win_goto_section(SECTION_PHONE, TRUE);
 }

@@ -1,6 +1,6 @@
 /*
  * Mokosuite
- * Panel notifications window
+ * Miscellaneous panel notifications
  * Copyright (C) 2009-2010 Daniele Ricci <daniele.athome@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,22 +18,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __PANEL_NOTIFICATIONS_WIN_H
-#define __PANEL_NOTIFICATIONS_WIN_H
+#ifndef __PANEL_NOTIFICATIONS_MISC_H
+#define __PANEL_NOTIFICATIONS_MISC_H
 
 #include "panel.h"
 
-void notification_window_add(MokoNotification* n);
-void notification_window_remove(MokoNotification* n);
+void notify_internal_exec(MokoNotification* n);
 
-void notify_window_init(MokoPanel* panel);
+void notify_internal_init(MokoPanel* panel);
 
-void notify_window_start(void);
-void notify_window_end(void);
-
-void notify_window_show(void);
-void notify_window_hide(void);
-
-void notify_window_update_operator(const char* operator);
-
-#endif  /* __PANEL_NOTIFICATIONS_WIN_H */
+#endif  /* __PANEL_NOTIFICATIONS_MISC_H */

@@ -548,7 +548,7 @@ PhoneCallBlock* phone_call_block_new(MokoWin* parent, const char* peer, int id, 
 
     // pusha la notifica
     b->notification_id = moko_notifications_push(panel_notifications, peer,
-        MOKOSUITE_DATADIR "call-start.png", NOTIFICATION_ACTIVE_CALL, MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH, NULL);
+        "active-call", peer, MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH, NULL);
 
     return b;
 }

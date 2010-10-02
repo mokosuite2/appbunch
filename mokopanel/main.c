@@ -46,71 +46,12 @@ static MokoPanel* main_panel = NULL;
 MokoSettingsService* panel_settings = NULL;
 
 #if 0
-Evas_Object* msgbox = NULL;
-
-int height = 40;
-Ecore_Animator* anim = NULL;
-
-static void message_unclick(void* data, Evas_Object* obj, void* event_info)
-{
-    if (msgbox != NULL) {
-        elm_pager_content_pop(pager);
-        msgbox = NULL;
-    }
-}
-
-static void message_click(void* data, Evas_Object* obj, void* event_info)
-{
-    g_debug("Message icon clicked!");
-    if (msgbox == NULL) {
-        // TODO
-        msgbox = elm_box_add(w);
-        elm_box_horizontal_set(msgbox, TRUE);
-        evas_object_size_hint_weight_set (msgbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-        evas_object_show(msgbox);
-
-        Evas_Object *icon_hold2 = elm_icon_add(w);
-        elm_icon_file_set(icon_hold2, MOKOSUITE_DATADIR "message-dock.png", NULL);
-        elm_icon_no_scale_set(icon_hold2, TRUE);
-        elm_icon_scale_set(icon_hold2, FALSE, FALSE);
-        evas_object_size_hint_min_set(icon_hold2, 30, 0);
-        evas_object_size_hint_align_set(icon_hold2, 0.5, 0.5);
-        evas_object_show(icon_hold2);
-        elm_box_pack_end(msgbox, icon_hold2);
-
-        evas_object_smart_callback_add(icon_hold2, "clicked", message_unclick, NULL);
-
-        Evas_Object* lmsg = elm_label_add(w);
-        elm_label_label_set(lmsg, "Ciao zio chiamami alle 17.45.02");
-        evas_object_size_hint_weight_set (lmsg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-        evas_object_size_hint_align_set(lmsg, 0.0, 0.5);
-        evas_object_show(lmsg);
-
-        elm_box_pack_end(msgbox, lmsg);
-    }
-
-    elm_pager_content_push(pager, msgbox);
-}
-
-static void input_event(int source, int action, int duration)
-{
-    if (source == DEVICE_INPUT_SOURCE_POWER &&
-        action == DEVICE_INPUT_ACTION_HELD &&
-        duration == 4) {
-
-        g_debug("Shutdown window");
-        shutdown_window_show();
-    }
-}
-#endif
-
-/*
 static gboolean test_after_notify(MokoPanel* panel)
 {
-    //mokopanel_notification_queue(main_panel, "Io bene, tu?", MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_MESSAGE, MOKOPANEL_NOTIFICATION_FLAG_NONE);
+    mokopanel_notification_queue(main_panel, "Io bene, tu?", "unread-message", "test unread message/2", MOKOPANEL_NOTIFICATION_FLAG_NONE);
     return FALSE;
 }
-*/
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -147,7 +88,7 @@ int main(int argc, char* argv[])
     g_object_unref(driver_proxy);
 
     /*
-    if (request_name_reply != EGG_DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (request_ret != EGG_DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
         g_error("Could not become primary name owner. Exiting.");
         return EXIT_FAILURE;
     }
@@ -168,21 +109,16 @@ int main(int argc, char* argv[])
     // idle screen
     idlescreen_init(main_panel);
 
-    #if 0
-    // connetti i segnali FSO
-    fsoHandlers.deviceInputEvent = input_event;
-
-    fso_handlers_add(&fsoHandlers);
-    #endif
-
     // FIXME test icone
-    //mokopanel_notification_queue(main_panel, "Ciao zio come stai?", MOKOSUITE_DATADIR "message-dock.png", NOTIFICATION_UNREAD_MESSAGE,
-    //    MOKOPANEL_NOTIFICATION_FLAG_NONE);
+    #if 0
+    mokopanel_notification_queue(main_panel, "Ciao zio come stai?", "unread-message", "test unread message/2",
+        MOKOPANEL_NOTIFICATION_FLAG_NONE | MOKOPANEL_NOTIFICATION_FLAG_REPRESENT);
     //mokopanel_notification_queue(main_panel, "+393296061565", MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL,
     //    MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH);
     //mokopanel_notification_queue(main_panel, "+39066520498", MOKOSUITE_DATADIR "call-end.png", NOTIFICATION_MISSED_CALL,
     //    MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH);
-    //g_timeout_add_seconds(1, (GSourceFunc) test_after_notify, main_panel);
+    g_timeout_add_seconds(1, (GSourceFunc) test_after_notify, main_panel);
+    #endif
     // FIXME fine test icone
 
     return moko_factory_run();

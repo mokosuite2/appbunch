@@ -27,17 +27,23 @@ namespace Mokosuite
          * @param text testo della notifica, oppure NULL.
          * @param icon il nome del file dell'icona da visualizza.
          * @param type il tipo della notifica; se l'icona e' gia' presente per questo tipo, non ne sara' aggiunta un'altra
+         * @param subdescription sotto-descrizione della notifica (NULL non permesso)
          * @param flags flag per la notifica
          * @return l'ID univoco della notifica
          */
-        public int PushNotification(string? text, string icon, int type, int flags)
+        public int PushNotification(string? text, string type, string subdescription, int flags)
         {
-            return Panel.notification_queue(this.panel, text, icon, type, flags);
+            return Panel.notification_queue(this.panel, text, type, subdescription, flags);
         }
 
         public void RemoveNotification(int notification_id)
         {
             Panel.notification_remove(this.panel, notification_id);
+        }
+
+        public void RegisterType(string type, string icon, string description1, string description2, bool format_count)
+        {
+            Panel.register_notification_type(this.panel, type, icon, description1, description2, format_count);
         }
     }
 

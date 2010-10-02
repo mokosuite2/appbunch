@@ -21,7 +21,7 @@
 #ifndef __PANEL_H
 #define __PANEL_H
 
-#include <Evas.h>
+#include <Elementary.h>
 #include <glib-object.h>
 
 struct _MokoPanel {
@@ -60,6 +60,9 @@ struct _MokoPanel {
     /* oggetto in primo piano */
     Evas_Object* topmost;
 
+    /* definizione tipi */
+    GHashTable* types;
+
     /* lista icone di notifica in prima pagina */
     GPtrArray* list;
 
@@ -81,6 +84,34 @@ struct _MokoPanel {
 
 typedef struct _MokoPanel MokoPanel;
 
+struct _MokoNotificationType {
+    char* name;
+    char* icon;
+    char* description1;
+    char* description2;
+    gboolean format_count;
+};
+
+typedef struct _MokoNotificationType MokoNotificationType;
+
+struct _MokoNotification {
+    /* roba della finestra delle notifiche */
+    Evas_Object* list;
+    Elm_Genlist_Item* item;
+    Evas_Object* win;
+
+    /* roba del pannello */
+    MokoPanel* panel;
+    guint sequence;
+
+    Evas_Object* icon;
+    char* text;
+    char* subdescription;
+    MokoNotificationType* type;
+};
+
+typedef struct _MokoNotification MokoNotification;
+
 #define PANEL_HEIGHT        (MOKOSUITE_SCALE_FACTOR * 28)
 #define PANEL_WIDTH         (MOKOSUITE_SCALE_FACTOR * 240)
 #define ICON_SIZE           (MOKOSUITE_SCALE_FACTOR * 24)
@@ -94,11 +125,23 @@ typedef void (*MokoPanelCallback)(MokoPanel* panel, int event, gpointer data);
 void mokopanel_fire_event(MokoPanel* panel, int event, gpointer data);
 void mokopanel_event(MokoPanel* panel, int event, gpointer data);
 
-void mokopanel_notification_set_icon(MokoPanel* panel, int id, const char* icon);
 void mokopanel_notification_represent(MokoPanel* panel);
+int mokopanel_count_notifications(MokoPanel* panel, const char* type);
+Elm_Genlist_Item* mokopanel_get_list_item(MokoPanel* panel, const char* type);
 
 void mokopanel_notification_remove(MokoPanel* panel, int id);
-int mokopanel_notification_queue(MokoPanel* panel, const char* text, const char* icon, int type, int flags);
+int mokopanel_notification_queue(MokoPanel* panel,
+        const char* text,
+        const char* type,
+        const char* subdescription,
+        int flags);
+
+void mokopanel_register_notification_type(MokoPanel* panel,
+        const char* type,
+        const char* icon,
+        const char* description1,
+        const char* description2,
+        gboolean format_count);
 
 MokoPanel* mokopanel_new(const char* name, const char* title);
 

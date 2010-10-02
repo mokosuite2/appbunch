@@ -24,11 +24,13 @@ mokopanel_VALASOURCES = \
 mokopanel_SOURCES = $(dbus_sources) \
 	$(mokopanel_VALASOURCES:.vala=.c) \
 	notifications-service.h \
+	notifications-win.c \
+	notifications-win.h \
+	notifications-misc.c \
+	notifications-misc.h \
 	main.c \
 	panel.c \
 	panel.h \
-	notifications-win.c \
-	notifications-win.h \
 	clock.c \
 	clock.h \
 	battery.c \

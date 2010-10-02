@@ -452,7 +452,6 @@ static void init_settings()
 
     value = NULL;
     moko_settings_service_get_setting(panel_settings, SETTING_DISPLAY_BRIGHTNESS, NULL, &value, NULL);
-    g_critical("Value = %s", value);
     if (value == NULL) {
         // nessuna impostazione definita, impostala
         brightness = 90;

@@ -35,14 +35,6 @@
 
 #include <glib/gi18n-lib.h>
 
-/* !!!!! FIXME FIXME FIXME !!!!! */
-#ifdef OPENMOKO
-#define SEGV_ADDRESS    0x60000
-#else
-//#define SEGV_ADDRESS    0x10
-#define SEGV_ADDRESS    0xbfff0000
-#endif
-
 // segnale GSM
 static gint8 signal_strength = 0;
 
@@ -92,20 +84,17 @@ static void update_icon(Evas_Object* gsm)
 }
 
 /* versione SEGV-safe di ogsmd_network_get_registration_status_from_dbus */
-int FIXED_ogsmd_network_get_registration_status_from_dbus(GHashTable * properties)
+int gsm_network_get_registration_status_from_dbus(GHashTable * properties)
 {
     GValue *reg = NULL;
     const char *registration = NULL;
 
     // ma tu guarda...
-    g_debug("(reg status) Properties: %p", properties);
-    if ((properties == NULL || (guint32)properties < SEGV_ADDRESS)
-        ||
-        ((reg =
-          g_hash_table_lookup(properties, "registration")) == NULL))
+    if (properties == NULL || ((reg = g_hash_table_lookup(properties, "registration")) == NULL))
         return NETWORK_PROPERTY_REGISTRATION_UNKNOWN;
 
     registration = g_value_get_string(reg);
+    g_debug("(reg status) registration=%s", registration);
 
     if (!strcmp
         (registration, "unregistered")) {
@@ -129,15 +118,12 @@ int FIXED_ogsmd_network_get_registration_status_from_dbus(GHashTable * propertie
     return NETWORK_PROPERTY_REGISTRATION_UNKNOWN;
 }
 
-const char * FIXED_ogsmd_network_get_provider_from_dbus(GHashTable * properties)
+const char* gsm_network_get_provider_from_dbus(GHashTable * properties)
 {
     GValue *provider;
-    g_debug("(provider) Properties: %p", properties);
 
-    if (properties != NULL && (guint32)properties > SEGV_ADDRESS) {
-        provider =
-            g_hash_table_lookup(properties,
-                        "provider");
+    if (properties != NULL) {
+        provider = g_hash_table_lookup(properties, "provider");
         return provider == NULL ? NULL : g_value_get_string(provider);
     }
     return NULL;
@@ -145,6 +131,11 @@ const char * FIXED_ogsmd_network_get_provider_from_dbus(GHashTable * properties)
 
 static void get_signal_strength_callback(GError *error, int strength, gpointer data)
 {
+    if (error) {
+        g_debug("Unable to get signal strength status: %s", error->message);
+        return;
+    }
+
     Evas_Object* gsm = (Evas_Object*) data;
         g_debug("GSM signal strength: %d", strength);
 
@@ -155,6 +146,11 @@ static void get_signal_strength_callback(GError *error, int strength, gpointer d
 
 static void get_functionality_callback(GError* error, const char* level, gboolean autoregister, const char* pin, gpointer data)
 {
+    if (error) {
+        g_debug("Unable to get GSM functionality: %s", error->message);
+        return;
+    }
+
     Evas_Object* gsm = (Evas_Object *) data;
 
     // errore - gsm disattivo
@@ -171,8 +167,15 @@ static void get_functionality_callback(GError* error, const char* level, gboolea
 
 static void get_network_status_callback(GError *error, GHashTable *status, gpointer data)
 {
-    int status_n = FIXED_ogsmd_network_get_registration_status_from_dbus(status);
-    const char* operator = FIXED_ogsmd_network_get_provider_from_dbus(status);
+    if (error) {
+        gsm_status = GSM_STATUS_DISABLED;
+        update_icon((Evas_Object *)data);
+        g_debug("Unable to get network status: %s", error->message);
+        return;
+    }
+
+    int status_n = gsm_network_get_registration_status_from_dbus(status);
+    const char* operator = gsm_network_get_provider_from_dbus(status);
     g_debug("GSM network status: %d", status_n);
 
     if (status_n == NETWORK_PROPERTY_REGISTRATION_DENIED) {
@@ -203,6 +206,13 @@ static void get_network_status_callback(GError *error, GHashTable *status, gpoin
 
 static void get_device_status_callback(GError *error, const int status, gpointer data)
 {
+    if (error) {
+        g_debug("Unable to get GSM device status: %s", error->message);
+        gsm_status = GSM_STATUS_DISABLED;
+        update_icon((Evas_Object *)data);
+        return;
+    }
+
     g_debug("GSM Device status %d", status);
 
     switch (status) {
@@ -234,6 +244,11 @@ static void get_device_status_callback(GError *error, const int status, gpointer
 
 static void get_auth_status_callback(GError *error, int status, gpointer data)
 {
+    if (error) {
+        g_debug("Unable to get GSM auth status status: %s", error->message);
+        return;
+    }
+
     g_debug("SIM auth status %d", status);
 
     if (status == SIM_AUTH_STATUS_READY) {
@@ -271,35 +286,33 @@ static void auth_status_changed(gpointer data, int status)
 static gboolean gsm_fso_connect(gpointer data)
 {
     ogsmd_network_dbus_connect();
-    if (ogsmdNetworkBus == NULL)
+    if (ogsmdNetworkBus == NULL) {
         g_critical("Cannot connect to ogsmd (network)");
-
-    ogsmd_device_dbus_connect();
-    if (ogsmdDeviceBus == NULL)
-        g_critical("Cannot connect to ogsmd (device)");
-
-    ogsmd_sim_dbus_connect();
-    if (ogsmdSimBus == NULL)
-        g_critical("Cannot connect to ogsmd (sim)");
-
-    // richiedi valori iniziali gsm
-    if (ogsmdNetworkBus != NULL) {
+    }
+    else {
         ogsmd_network_get_status(get_network_status_callback, data);
         ogsmd_network_get_signal_strength(get_signal_strength_callback, data);
+        ogsmd_network_status_connect(network_status_changed, data);
+        ogsmd_network_signal_strength_connect(signal_strength_changed, data);
     }
 
-    // richiedi stato iniziale modem gsm
-    if (ogsmdDeviceBus != NULL)
+    ogsmd_device_dbus_connect();
+    if (ogsmdDeviceBus == NULL) {
+        g_critical("Cannot connect to ogsmd (device)");
+    }
+    else {
         ogsmd_device_get_device_status(get_device_status_callback, data);
+        ogsmd_device_device_status_connect(device_status_changed, data);
+    }
 
-    if (ogsmdSimBus != NULL)
+    ogsmd_sim_dbus_connect();
+    if (ogsmdSimBus == NULL) {
+        g_critical("Cannot connect to ogsmd (sim)");
+    }
+    else {
         ogsmd_sim_get_auth_status(get_auth_status_callback, data);
-
-    // connetti segnali FSO
-    ogsmd_network_status_connect(network_status_changed, data);
-    ogsmd_network_signal_strength_connect(signal_strength_changed, data);
-    ogsmd_device_device_status_connect(device_status_changed, data);
-    ogsmd_sim_auth_status_connect(auth_status_changed, data);
+        ogsmd_sim_auth_status_connect(auth_status_changed, data);
+    }
 
     return FALSE;
 }

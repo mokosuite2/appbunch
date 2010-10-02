@@ -30,6 +30,7 @@
 #include "battery.h"
 #include "gsm.h"
 #include "notifications-win.h"
+#include "notifications-misc.h"
 #include "notifications-service.h"
 
 #define MOKO_PANEL_NOTIFICATIONS_PATH    "/org/mokosuite/Panel/0/Notifications"
@@ -48,17 +49,28 @@ static void _panel_mouse_up(void *data, Evas *e, Evas_Object *obj, void *event_i
 
 static void free_notification(gpointer data)
 {
-    gpointer *data2 = (gpointer*) data;
+    MokoNotification *data2 = data;
+
+    // cancella icona solo se tutte le notifiche di quel tipo sono andate
+    int i;
+    MokoPanel* panel = data2->panel;
+
+    for (i = 0; i < panel->list->len; i++) {
+        MokoNotification *no = g_ptr_array_index(panel->list, i);
+        if (data2 != no && !strcmp(data2->type->name, no->type->name)) goto no_icon;
+    }
+
+    // tutte le notifiche di quel tipo sono andate, cancella icona
+    g_debug("Deleting notification icon %p for type '%s'", data2->icon, data2->type->name);
+    evas_object_del(data2->icon);
 
     // rimuovi dalla finestra delle notifiche
-    notification_window_remove((MokoNotification *) data2[3]);
+    notification_window_remove(data2);
 
-    // cancella icona
-    Evas_Object *ic = (Evas_Object*)data2[1];
-
-    if (ic != NULL)
-        evas_object_del(ic);
-
+no_icon:
+    g_debug("Freeing notification %d", data2->sequence);
+    g_free(data2->text);
+    g_free(data2->subdescription);
     g_free(data);
 }
 
@@ -241,6 +253,43 @@ void mokopanel_fire_event(MokoPanel* panel, int event, gpointer data)
 }
 
 /**
+ * Conta le notifiche di un tipo dato.
+ * @param panel
+ * @param type
+ * @return il conteggio
+ */
+int mokopanel_count_notifications(MokoPanel* panel, const char* type)
+{
+    guint count = 0;
+    int i;
+    for (i = 0; i < panel->list->len; i++) {
+        MokoNotification* data = (MokoNotification*) g_ptr_array_index(panel->list, i);
+        if (!strcmp(data->type->name, type))
+            count++;
+    }
+
+    return count;
+}
+
+/**
+ * Restituisce l'item della lista del tipo dato.
+ * @param panel
+ * @param type
+ * @return l'item
+ */
+Elm_Genlist_Item* mokopanel_get_list_item(MokoPanel* panel, const char* type)
+{
+    int i;
+    for (i = 0; i < panel->list->len; i++) {
+        MokoNotification* data = (MokoNotification*) g_ptr_array_index(panel->list, i);
+        if (!strcmp(data->type->name, type) && data->item)
+            return data->item;
+    }
+
+    return NULL;
+}
+
+/**
  * Ri-pusha le notifiche con flag represent.
  */
 void mokopanel_notification_represent(MokoPanel* panel)
@@ -255,32 +304,6 @@ void mokopanel_notification_represent(MokoPanel* panel)
 }
 
 /**
- * Aggiorna le caratteristiche di una notifica (solo l'icona).
- */
-void mokopanel_notification_set_icon(MokoPanel* panel, int id, const char* icon)
-{
-    g_return_if_fail(panel != NULL);
-
-    gpointer *data = NULL;
-    Evas_Object* ic = NULL;
-    int i;
-
-    for (i = 0; i < panel->list->len; i++) {
-
-        gpointer *data2 = g_ptr_array_index(panel->list, i);
-        if (data2) {
-            data = data2;
-            if (GPOINTER_TO_INT(data[0]) == id) {
-                // cambia l'icona
-                ic = data[1];
-                elm_icon_file_set(ic, icon, NULL);
-            }
-
-        }
-    }
-}
-
-/**
  * Rimuove una notifica (rimuove l'icona dalla prima pagina)
  */
 void mokopanel_notification_remove(MokoPanel* panel, int id)
@@ -288,29 +311,31 @@ void mokopanel_notification_remove(MokoPanel* panel, int id)
     g_return_if_fail(panel != NULL);
 
     // trova l'id (sigh)
-    gpointer *data = NULL;
+    MokoNotification* data = NULL;
     int i;
 
     for (i = 0; i < panel->list->len; i++) {
 
-        gpointer *data2 = g_ptr_array_index(panel->list, i);
+        MokoNotification* data2 = g_ptr_array_index(panel->list, i);
         if (data2) {
-            data = data2;
-            g_debug("Current index: %d, id = %d (searching: %d)", i, GPOINTER_TO_INT(data[0]), id);
-            if (GPOINTER_TO_INT(data[0]) == id)
+            //g_debug("Current index: %d, id = %d (searching: %d)", i, data2->sequence, id);
+            if (data2->sequence == id) {
+                data = data2;
                 break;
-
-            data = NULL;
+            }
         }
     }
 
     if (data != NULL) {
-
         // rimozione dai represent
         GList* iter = panel->represent->head;
         while (iter) {
             gpointer* data = iter->data;
             if (GPOINTER_TO_INT(data[2]) == id) {
+                g_free(data[0]);
+                g_free(data[1]);
+                g_free(data);
+
                 g_queue_delete_link(panel->represent, iter);
                 break;
             }
@@ -329,27 +354,40 @@ void mokopanel_notification_remove(MokoPanel* panel, int id)
  * secondo, riga per riga; dopodiché sarà inserita in prima pagina.
  * 
  * @param text testo della notifica, oppure NULL.
- * @param icon il nome del file dell'icona da visualizza.
  * @param type il tipo della notifica; se l'icona e' gia' presente per questo tipo, non ne sara' aggiunta un'altra
+ * @param subdescription sotto-descrizione della notifica (NULL non permesso, usato solo in caso di notifica singolare).
  * @param flags flag per la notifica
  * @return l'ID univoco della notifica
  */
-int mokopanel_notification_queue(MokoPanel* panel, const char* text, const char* icon, int type, int flags)
+int mokopanel_notification_queue(MokoPanel* panel,
+        const char* text,
+        const char* type,
+        const char* subdescription,
+        int flags)
 {
+    // alcuni controllini
     g_return_val_if_fail(panel != NULL, -1);
 
-    // l'icona e' obbligatoria
-    g_return_val_if_fail(icon != NULL, -1);
+    MokoNotificationType* type_def = g_hash_table_lookup(panel->types, type);
+    if (!type_def) {
+        g_warning("type '%s' not registered", type);
+        return -1;
+    }
+
+    char* icon = type_def->icon;
 
     // intanto appendi l'icona in prima pagina se non e' gia' presente dello stesso tipo
     Evas_Object *ic = NULL;
-    gpointer *data = NULL;
+    MokoNotification *data = NULL;
     int i;
     guint seq;
 
     for (i = 0; i < panel->list->len; i++) {
-        data = (gpointer *) g_ptr_array_index(panel->list, i);
-        if (GPOINTER_TO_INT(data[2]) == type) goto no_icon;
+        data = (MokoNotification*) g_ptr_array_index(panel->list, i);
+        if (!strcmp(data->type->name, type)) {
+            ic = data->icon;
+            goto no_icon;
+        }
     }
 
     ic = elm_icon_add(panel->win);
@@ -367,25 +405,25 @@ int mokopanel_notification_queue(MokoPanel* panel, const char* text, const char*
 
 no_icon:
     seq = panel->sequence;
-    if ((seq + 1) >  G_MAXUINT) seq = 0;
+    if ((seq + 1) >  G_MAXUINT) seq = 1;
     else seq++;
 
     panel->sequence = seq;
 
-    g_debug("Adding icon with sequence %d", seq);
-
-    data = g_new0(gpointer, 4);
-    data[0] = GINT_TO_POINTER(seq);
-    data[1] = ic;
-    data[2] = GINT_TO_POINTER(type);
-
-    // aggiungi alla finestra delle notifiche
-    data[3] = notification_window_add(panel, text, icon, type);
+    data = g_new0(MokoNotification, 1);
+    data->panel = panel;
+    data->sequence = seq;
+    data->icon = ic;
+    data->text = g_strdup(text);
+    data->subdescription = g_strdup(subdescription);
+    data->type = type_def;
 
     g_ptr_array_add(panel->list, data);
 
-    if (text != NULL) {
+    // aggiungi alla finestra delle notifiche
+    notification_window_add(data);
 
+    if (text != NULL) {
         // pusha se richiesto
         if (!(flags & MOKOPANEL_NOTIFICATION_FLAG_DONT_PUSH)) {
             push_text_notification(panel, text, icon);
@@ -400,6 +438,41 @@ no_icon:
     return seq;
 }
 
+/**
+ * Registra un nuovo tipo di notifica.
+ * @param panel istanza del pannello
+ * @param type nome del tipo
+ * @param icon percorso del file dell'icona da usare
+ * @param description1 descrizione singolare da usare
+ * @param description2 descrizione plurale da usare
+ * @param format_count TRUE per formattare la stringa con il conteggio delle notifiche associate
+ */
+void mokopanel_register_notification_type(MokoPanel* panel,
+        const char* type,
+        const char* icon,
+        const char* description1,
+        const char* description2,
+        gboolean format_count)
+{
+    g_return_if_fail(panel != NULL);
+    g_return_if_fail(type != NULL);
+    g_return_if_fail(icon != NULL);
+
+    MokoNotificationType* data = g_hash_table_lookup(panel->types, type);
+    if (data == NULL) {
+        g_debug("registering notification type '%s'", type);
+        MokoNotificationType* data = g_new0(MokoNotificationType, 1);
+
+        data->name = g_strdup(type);
+        data->icon = g_strdup(icon);
+        data->description1 = g_strdup(description1);
+        data->description2 = g_strdup(description2);
+        data->format_count = format_count;
+
+        g_hash_table_insert(panel->types, g_strdup(type), data);
+    }
+}
+
 MokoPanel* mokopanel_new(const char* name, const char* title)
 {
     Ecore_X_Window xwin;
@@ -410,6 +483,8 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     panel->queue = g_queue_new();
     panel->represent = g_queue_new();
     panel->list = g_ptr_array_new_with_free_func(free_notification);
+    // senza de-registrazione :D
+    panel->types = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     panel->callback = mokopanel_event;
 
     // servizio dbus
@@ -479,9 +554,6 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     panel->time = clock_applet_new(panel);
     elm_box_pack_end(panel->hbox, panel->time);
 
-    // notifiche chiamate
-    notify_calls_init(panel);
-
     // callback mouse
     Evas_Object* ev = evas_object_rectangle_add(evas_object_evas_get(panel->win));
     evas_object_color_set(ev, 0, 0, 0, 0);
@@ -498,6 +570,9 @@ MokoPanel* mokopanel_new(const char* name, const char* title)
     evas_object_resize(panel->win, PANEL_WIDTH, PANEL_HEIGHT);
 
     evas_object_show(panel->win);
+
+    // notifiche interne
+    notify_internal_init(panel);
 
     // finestra notifiche
     notify_window_init(panel);

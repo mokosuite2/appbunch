@@ -5,6 +5,7 @@
 #include <libmokosuite/gui.h>
 #include <libmokosuite/misc.h>
 #include <libmokosuite/settings-service.h>
+#include <libmokosuite/notifications.h>
 #include <freesmartphone-glib/freesmartphone-glib.h>
 #include <freesmartphone-glib/ogsmd/call.h>
 #include <freesmartphone-glib/ousaged/usage.h>
@@ -20,7 +21,8 @@
 #define CALL_VIBRATE_PULSES             200
 #define CALL_VIBRATE_ON_DURATION        600
 #define CALL_VIBRATE_OFF_DURATION       300
-#define CALL_VIBRATE_STRENGTH           100	// 60 sembra troppo piano... mmm...
+// FIXME 100 kernel bug
+#define CALL_VIBRATE_STRENGTH           25
 
 // suoneria predefinita
 #define CALL_DEFAULT_RINGTONE           "/usr/share/sounds/ringtone_ringnroll.wav"
@@ -49,6 +51,8 @@ static char* call_notification_ringtone = NULL;
 static char* call_notification_current_ringtone = NULL;
 
 static int current_mute_status = 0;
+
+extern DBusGProxy* panel_notifications;
 
 /**
  * Fa partire una notifica di chiamata.
@@ -468,9 +472,7 @@ void phone_call_win_init(MokoSettingsService *settings)
     moko_settings_service_callback_add(settings, CALL_NOTIFICATION_VIBRATION, call_notification_settings);
     moko_settings_service_callback_add(settings, CALL_NOTIFICATION_RINGTONE, call_notification_settings);
 
-    #if 0
-    TEST
-    phone_call_win_activate();
-    append_callblock("4242", 1, TRUE);
-    #endif
+    // registra la notifica di chiamata attiva
+    moko_notifications_register_type(panel_notifications, "active-call", MOKOSUITE_DATADIR "call-start.png",
+        _("%d active call"), _("%d active calls"), TRUE, NULL);
 }
