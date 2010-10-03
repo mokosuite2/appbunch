@@ -68,12 +68,15 @@ static void _number_pressed(void *data, Evas_Object* obj, const char* emission, 
 
     edje_object_part_text_set(dialer_edje, "text_number", number->str);
 
-    if (number->len > 0)
+    if (number->len > 0) {
         // abilita il menu' locale
-        mokowin_menu_set(win, (menus[SECTION_PHONE])());
-    else
-        mokowin_menu_set(win, NULL);
+        if (!win->current_menu)
+            mokowin_menu_set(win, (menus[SECTION_PHONE])());
+    }
 
+    else {
+        mokowin_menu_set(win, NULL);
+    }
 }
 
 static gboolean _plus_pressed(gpointer data)
@@ -278,6 +281,10 @@ void phone_win_goto_section(int section, gboolean force)
     // sezione contatti -- resetta vista
     if (section == SECTION_CONTACTS)
         contactsview_reset_view();
+
+    // cancella il vecchio menu manualmente
+    if (win->current_menu)
+        mokowin_menu_set(win, NULL);
 
     // imposta il menu hover
     if (section == SECTION_PHONE) {

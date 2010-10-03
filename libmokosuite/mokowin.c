@@ -203,6 +203,9 @@ void mokowin_menu_set(MokoWin *mw, Evas_Object *box)
 
     if (box == NULL) {
         mw->menu_enable = FALSE;
+        if (mw->current_menu)
+            evas_object_del(mw->current_menu);
+
         mw->current_menu = NULL;
 
     } else {
