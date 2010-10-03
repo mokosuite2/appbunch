@@ -140,6 +140,20 @@ static void add_launcher(Evas_Object* win, Evas_Object* layout_edje, Evas_Object
     }
 }
 
+static gint _sort_desktop(gconstpointer _a, gconstpointer _b)
+{
+    const Efreet_Desktop* a = _a;
+    const Efreet_Desktop* b = _b;
+    char* name1 = g_utf8_casefold(a->name, -1);
+    char* name2 = g_utf8_casefold(b->name, -1);
+
+    gint cmp = g_utf8_collate(name1, name2);
+    g_free(name1);
+    g_free(name2);
+
+    return cmp;
+}
+
 Evas_Object* make_launchers(Evas_Object* win, Evas_Object* layout_edje)
 {
     Evas_Object* mb, *sc;
@@ -153,6 +167,7 @@ Evas_Object* make_launchers(Evas_Object* win, Evas_Object* layout_edje)
         const char* name = NULL;
         char* full = NULL;
         Efreet_Desktop* d = NULL;
+        GList* sorting = NULL;
 
         while ((name = g_dir_read_name(dir))) {
             full = g_strdup_printf("%s/%s", APPS_PATH, name);
@@ -162,17 +177,26 @@ Evas_Object* make_launchers(Evas_Object* win, Evas_Object* layout_edje)
                 d = efreet_desktop_get(full);
 
                 if (d) {
-                    add_launcher(win, layout_edje, tb, d);
-                    efreet_desktop_free(d);
+                    sorting = g_list_insert_sorted(sorting, d, _sort_desktop);
                 }
             }
 
             g_free(full);
         }
-
         g_dir_close(dir);
-    }
 
+        if (sorting) {
+            GList* iter = sorting;
+            while (iter) {
+                Efreet_Desktop* d = iter->data;
+                add_launcher(win, layout_edje, tb, d);
+                efreet_desktop_free(d);
+
+                iter = iter->next;
+            }
+            g_list_free(sorting);
+        }
+    }
 
     mb = elm_mapbuf_add(win);
     elm_mapbuf_content_set(mb, tb);
