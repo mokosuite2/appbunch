@@ -52,7 +52,7 @@ static void _contacts_call_clicked(void *data, Evas_Object *obj, void *event_inf
         phone_win_call_internal(f->value, NULL);
 }
 
-static char* contacts_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* contacts_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
     ContactEntry* c = (ContactEntry *)data;
 
@@ -71,7 +71,7 @@ static char* contacts_genlist_label_get(const void *data, Evas_Object * obj, con
     return NULL;
 }
 
-static Evas_Object* contacts_genlist_icon_get(const void *data, Evas_Object * obj, const char *part)
+static Evas_Object* contacts_genlist_icon_get(void *data, Evas_Object * obj, const char *part)
 {
     ContactEntry* c = (ContactEntry *)data;
     MokoWin* win = phone_win_get_mokowin();
@@ -105,7 +105,7 @@ static Evas_Object* contacts_genlist_icon_get(const void *data, Evas_Object * ob
     return NULL;
 }
 
-static void contacts_genlist_del(const void *data, Evas_Object *obj)
+static void contacts_genlist_del(void *data, Evas_Object *obj)
 {
     // TODO bisogna chiamare la liberazione della cache di lookup!!!
     // TODO meglio far liberare tutto da contactsdb.c

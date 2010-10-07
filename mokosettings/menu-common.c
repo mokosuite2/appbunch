@@ -30,7 +30,7 @@ static void _list_selected(void *data, Evas_Object *obj, void *event_info) {
 
 }
 
-static Evas_Object* _menu_genlist_icon_get(const void *data, Evas_Object * obj, const char *part)
+static Evas_Object* _menu_genlist_icon_get(void *data, Evas_Object * obj, const char *part)
 {
     MenuItem *entry = (MenuItem *) data;
 
@@ -49,7 +49,7 @@ static Evas_Object* _menu_genlist_icon_get(const void *data, Evas_Object * obj, 
     return NULL;
 }
 
-static char* _menu_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* _menu_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
     MenuItem *entry = (MenuItem *) data;
 

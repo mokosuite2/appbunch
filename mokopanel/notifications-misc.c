@@ -58,6 +58,12 @@ static GArray* calls = NULL;
 #define CMD_UNREAD_MESSAGE  "/usr/bin/phoneui-messages"
 #define CMD_UNREAD_USSD     "/usr/bin/mokophone-activate.sh"
 
+// dati per i segnali di modifica/cancellazione chiamate o messaggi
+typedef struct {
+    int id;
+    gpointer update_signal;
+    gpointer delete_signal;
+} notification_signal_t;
 
 static void call_status(gpointer data, const int id, const int status, GHashTable *props)
 {
@@ -254,16 +260,33 @@ static void call_update(gpointer data, GHashTable* props)
     g_debug("Call has been modified - checking New attribute");
     // chiamata modificata - controlla new
     if (g_hash_table_lookup(props, "New") && !fso_get_attribute_int(props, "New")) {
+        notification_signal_t* no = data;
+
         g_debug("New is 0 - removing missed call");
-        mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+        mokopanel_notification_remove(current_panel, no->id);
+
+        // disconnetti segnali fso
+        opimd_call_call_updated_disconnect(no->update_signal);
+        opimd_call_call_deleted_disconnect(no->delete_signal);
+
+        g_free(no);
     }
 }
 
 static void call_remove(gpointer data)
 {
+    notification_signal_t* no = data;
+
     // chiamata cancellata - rimuovi sicuramente
     g_debug("Call has been deleted - removing missed call");
-    mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+
+    mokopanel_notification_remove(current_panel, no->id);
+
+    // disconnetti segnali fso
+    opimd_call_call_updated_disconnect(no->update_signal);
+    opimd_call_call_deleted_disconnect(no->delete_signal);
+
+    g_free(no);
 }
 
 static void call_data(GError* error, GHashTable* props, gpointer data)
@@ -298,8 +321,10 @@ static void call_data(GError* error, GHashTable* props, gpointer data)
         g_free(text);
 
         // connetti ai cambiamenti della chiamata per la rimozione
-        opimd_call_call_deleted_connect((char *) path, call_remove, GINT_TO_POINTER(id));
-        opimd_call_call_updated_connect((char *) path, call_update, GINT_TO_POINTER(id));
+        notification_signal_t* no = g_new(notification_signal_t, 1);
+        no->id = id;
+        no->delete_signal = opimd_call_call_deleted_connect((char *) path, call_remove, no);
+        no->update_signal = opimd_call_call_updated_connect((char *) path, call_update, no);
     }
 }
 
@@ -390,16 +415,31 @@ static void message_update(gpointer data, GHashTable* props)
     g_debug("Message has been modified - checking MessageRead attribute");
     // chiamata modificata - controlla read
     if (g_hash_table_lookup(props, "MessageRead") && fso_get_attribute_bool(props, "MessageRead", TRUE)) {
+        notification_signal_t* no = data;
+
         g_debug("MessageRead is 1 - removing message");
-        mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+        mokopanel_notification_remove(current_panel, no->id);
+
+        opimd_message_message_updated_disconnect(no->update_signal);
+        opimd_message_message_deleted_disconnect(no->delete_signal);
+
+        g_free(no);
     }
 }
 
 static void message_remove(gpointer data)
 {
+    notification_signal_t* no = data;
+
     // messaggio cancellato - rimuovi sicuramente
     g_debug("Message has been deleted - removing unread message");
-    mokopanel_notification_remove(current_panel, GPOINTER_TO_INT(data));
+
+    mokopanel_notification_remove(current_panel, no->id);
+
+    opimd_message_message_updated_disconnect(no->update_signal);
+    opimd_message_message_deleted_disconnect(no->delete_signal);
+
+    g_free(no);
 }
 
 static void message_data(GError* error, GHashTable* props, gpointer data)
@@ -433,8 +473,11 @@ static void message_data(GError* error, GHashTable* props, gpointer data)
         g_free(subtext);
 
         // connetti ai cambiamenti della chiamata per la rimozione
-        opimd_message_message_deleted_connect((char *) path, message_remove, GINT_TO_POINTER(id));
-        opimd_message_message_updated_connect((char *) path, message_update, GINT_TO_POINTER(id));
+        notification_signal_t* no = g_new(notification_signal_t, 1);
+        no->id = id;
+        no->delete_signal = opimd_message_message_deleted_connect((char *) path, message_remove, no);
+        no->update_signal = opimd_message_message_updated_connect((char *) path, message_update, no);
+
     }
 }
 

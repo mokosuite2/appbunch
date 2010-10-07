@@ -1,7 +1,7 @@
 INCLUDES = $(GLIB_CFLAGS) $(ELM_CFLAGS) \
 	-DLOCALEDIR=\""$(localedir)"\" -DDATADIR=\""$(datadir)"\" -DSYSCONFDIR=\""$(sysconfdir)"\" -Wall
 
-bin_PROGRAMS = theme_buttons
+noinst_PROGRAMS = theme_buttons
 
 theme_buttons_SOURCES = \
 	theme_buttons.c

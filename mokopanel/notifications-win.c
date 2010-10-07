@@ -81,7 +81,7 @@ static void _list_selected(void *data, Evas_Object *obj, void *event_info)
     notify_window_hide();
 }
 
-static char* notification_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* notification_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
     MokoNotification* n = (MokoNotification*) data;
     int c = mokopanel_count_notifications(n->panel, n->type->name);
@@ -102,7 +102,7 @@ static char* notification_genlist_label_get(const void *data, Evas_Object * obj,
     return NULL;
 }
 
-static Evas_Object* notification_genlist_icon_get(const void *data, Evas_Object * obj, const char *part)
+static Evas_Object* notification_genlist_icon_get(void *data, Evas_Object * obj, const char *part)
 {
     MokoNotification* n = (MokoNotification*) data;
 

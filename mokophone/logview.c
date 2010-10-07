@@ -118,7 +118,7 @@ static void _log_call_clicked(void *data, Evas_Object *obj, void *event_info)
         phone_win_call_internal(c->peer, NULL);
 }
 
-static char* log_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* log_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
     // TODO
     CallEntry* call = (CallEntry *) data;
@@ -155,7 +155,7 @@ static char* log_genlist_label_get(const void *data, Evas_Object * obj, const ch
     return NULL;
 }
 
-static Evas_Object* log_genlist_icon_get(const void *data, Evas_Object * obj, const char *part)
+static Evas_Object* log_genlist_icon_get(void *data, Evas_Object * obj, const char *part)
 {
     //g_debug("Requesting icon for part %s (data = %p)", part, data);
 
@@ -218,13 +218,13 @@ static Evas_Object* log_genlist_icon_get(const void *data, Evas_Object * obj, co
     return NULL;
 }
 
-static Eina_Bool log_genlist_state_get(const void *data, Evas_Object * obj, const char *part)
+static Eina_Bool log_genlist_state_get(void *data, Evas_Object * obj, const char *part)
 {
     // TODO
     return FALSE;
 }
 
-static void log_genlist_del(const void *data, Evas_Object *obj)
+static void log_genlist_del(void *data, Evas_Object *obj)
 {
     CallEntry* call = (CallEntry *) data;
     g_free(call->peer);
