@@ -1,2 +1,4 @@
-Mokosuite - Openmoko Neo Freerunner applications
+Mokosuite - Desktop environment and phone stack GUI for the Openmoko Freerunner
+
+Mainly tested on SHR unstable
 -- C rewrite of Mokosuite using EFL and GLib
