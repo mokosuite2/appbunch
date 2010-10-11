@@ -4,6 +4,7 @@
 #include <libmokosuite/settings-service.h>
 
 #include "mokomessages.h"
+#include "messagesdb.h"
 
 #include <glib/gi18n-lib.h>
 
@@ -12,6 +13,7 @@ static MokoWin* win = NULL;
 
 /* lista conversazioni */
 static Evas_Object* th_list;
+static Elm_Genlist_Item_Class th_itc = {0};
 
 static void _delete(void* mokowin, Evas_Object* obj, void* event_info)
 {
@@ -23,9 +25,9 @@ static void _list_selected(void *data, Evas_Object *obj, void *event_info) {
     elm_genlist_item_selected_set((Elm_Genlist_Item*)event_info, FALSE);
     // TODO
 
-    thread_t* t = (thread_t *) elm_genlist_item_data_get((Elm_Genlist_Item*)event_info);
-    msg_list_init(t);
-    msg_list_activate();
+    //thread_t* t = (thread_t *) elm_genlist_item_data_get((Elm_Genlist_Item*)event_info);
+    //msg_list_init(t);
+    //msg_list_activate();
 }
 
 void thread_win_activate(void)
@@ -42,7 +44,7 @@ void thread_win_hide(void)
     mokowin_hide(win);
 }
 
-static char* _newmsg_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* _newmsg_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
     if (!strcmp(part, "elm.text"))
         return g_strdup(_("New message"));
@@ -53,15 +55,15 @@ static char* _newmsg_genlist_label_get(const void *data, Evas_Object * obj, cons
     return NULL;
 }
 
-static char* _th_genlist_label_get(const void *data, Evas_Object * obj, const char *part)
+static char* _th_genlist_label_get(void *data, Evas_Object * obj, const char *part)
 {
-    const thread_t* t = data;
+    MessageThread* t = data;
 
     if (!strcmp(part, "elm.text"))
-        return g_strdup(t->peer);
+        return g_strdup_printf("%s (%d)", t->peer, t->total_count);
 
     else if (!strcmp(part, "elm.text.sub"))
-        return g_strdup(t->text);
+        return g_strdup(t->content);
 
     else if (!strcmp(part, "elm.text.right"))
         return get_time_repr(t->timestamp);
@@ -71,37 +73,11 @@ static char* _th_genlist_label_get(const void *data, Evas_Object * obj, const ch
 
 static void _list_realized(void *data, Evas_Object *obj, void *event_info)
 {
-    //g_debug("Item has been realized, marking");
-    thread_t* t = (thread_t *) elm_genlist_item_data_get((Elm_Genlist_Item*)event_info);
-    if (t && t->marked) {
+    MessageThread* t = (MessageThread*) elm_genlist_item_data_get((Elm_Genlist_Item*)event_info);
+    if (t && t->unread_count > 0) {
         Evas_Object* e = (Evas_Object *) elm_genlist_item_object_get((Elm_Genlist_Item*)event_info);
         edje_object_signal_emit(e, "elm,marker,enable", "elm");
     }
-}
-
-static Elm_Genlist_Item_Class test_itc = {0};
-
-static void test_messages(Evas_Object* list)
-{
-    test_itc.item_style = "thread";
-    test_itc.func.label_get = _th_genlist_label_get;
-
-    thread_t* t;
-    t = g_new0(thread_t, 1);
-    t->peer = "155";
-    t->text = "Le abbiamo addebitato 9 euro per l'offerta del cazzo aggiuntivo.";
-    t->timestamp = time(NULL);
-    t->marked = TRUE;
-
-    elm_genlist_item_append(list, &test_itc, t, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
-
-    t = g_new0(thread_t, 1);
-    t->peer = "+393296061565";
-    t->text = "Ciau more ti amo troppiximo!! Lo sai oggi ti ho fatto un regalino!:)!";
-    t->timestamp = time(NULL);
-    t->marked = FALSE;
-
-    elm_genlist_item_append(list, &test_itc, t, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 }
 
 static Evas_Object* thread_list(void)
@@ -120,14 +96,16 @@ static Evas_Object* thread_list(void)
     evas_object_smart_callback_add(list, "selected", _list_selected, NULL);
     evas_object_smart_callback_add(list, "realized", _list_realized, NULL);
 
+    // prepara l'itc
+    th_itc.item_style = "thread";
+    th_itc.func.label_get = _th_genlist_label_get;
+
     // aggiungi il primo elemento "Nuovo messaggio"
     Elm_Genlist_Item_Class *itc = g_new0(Elm_Genlist_Item_Class, 1);
     itc->item_style = "generic_sub";
     itc->func.label_get = _newmsg_genlist_label_get;
 
     elm_genlist_item_append(list, itc, NULL, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
-
-    test_messages(list);
 
     evas_object_show(list);
     return list;
@@ -150,6 +128,14 @@ static Evas_Object* make_menu(void)
     Evas_Object *bt_settings = mokowin_menu_hover_button(win, m, _("Settings"), 2, 0, 1, 1);
 
     return m;
+}
+
+void _thread(MessageThread* th, gpointer userdata)
+{
+    g_debug("THREAD %p, userdata=%p", th, userdata);
+
+    elm_genlist_item_append(th_list, &th_itc, th, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+
 }
 
 void thread_win_init(MokoSettingsService *settings)
@@ -175,4 +161,5 @@ void thread_win_init(MokoSettingsService *settings)
 
     // TODO carica le conversazioni :)
     // TODO g_idle_add(...);
+    messagesdb_foreach_thread(_thread, NULL);
 }

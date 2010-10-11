@@ -6,6 +6,7 @@
 #include <glib/gi18n-lib.h>
 
 #include "mokomessages.h"
+#include "messagesdb.h"
 
 /* finestra principale */
 static MokoWin* win = NULL;
@@ -99,7 +100,7 @@ static Evas_Object* make_menu(void)
     return m;
 }
 
-void msg_list_init(thread_t* thread)
+void msg_list_init(MessageThread* thread)
 {
     win = mokowin_new("mokosmsthread");
     if (win == NULL) {

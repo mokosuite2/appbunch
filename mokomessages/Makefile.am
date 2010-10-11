@@ -5,6 +5,8 @@ bin_PROGRAMS = mokomessages
 
 mokomessages_SOURCES = \
 	main.c \
+	messagesdb.c \
+	messagesdb.h \
 	threadwin.c \
 	threadwin.h \
 	msglist.c \
