@@ -35,6 +35,10 @@ static int wx = 0;
 static int wy = 0;
 static GPtrArray* widgets[NUM_DESKTOPS];
 static Evas_Object* desktops[NUM_DESKTOPS];
+static Evas_Object* desktop_scroller = NULL;
+
+// current desktop in dragging mode (-1 dragging disabled)
+int drag_status = -1;
 
 #if 0
 struct widget_press_data {
@@ -97,6 +101,7 @@ static void widget_released(void *data, Evas *e, Evas_Object *obj, void *event_i
 static void add_widget(int desktop_id, Evas_Object* wd)
 {
     elm_table_pack(desktops[desktop_id], wd, 1 + wx, 1 + (wy * 2), 1, 1);
+    evas_object_data_set(wd, "desktop_id", (void*) desktop_id);
 
     wx++;
     if (wx >= WIDGETS_COLUMNS) {
@@ -154,8 +159,10 @@ static void add_custom_widget(Evas_Object* win, int desktop_id, const char* icon
     edje_object_part_swallow(wd, "widget", bt);
     evas_object_size_hint_min_set(wd, LAUNCHER_WIDTH, LAUNCHER_HEIGHT);
 
-    //evas_object_event_callback_add(wd, EVAS_CALLBACK_MOUSE_DOWN, widget_pressed, scroller);
-    //evas_object_event_callback_add(wd, EVAS_CALLBACK_MOUSE_UP, widget_released, scroller);
+    #if 0
+    evas_object_event_callback_add(wd, EVAS_CALLBACK_MOUSE_DOWN, widget_pressed, scroller);
+    evas_object_event_callback_add(wd, EVAS_CALLBACK_MOUSE_UP, widget_released, scroller);
+    #endif
 
     evas_object_show(bt);
     evas_object_show(wd);
@@ -177,6 +184,30 @@ static Evas_Object* add_launcher_widget(Evas_Object* parent, int desktop_id, con
     }
 
     return wd;
+}
+
+void drag_start(int desktop_id)
+{
+    int i;
+    drag_status = desktop_id;
+
+    for (i = 0; i < widgets[desktop_id]->len; i++)
+        edje_object_signal_emit(g_ptr_array_index(widgets[desktop_id], i), "drag_start", "widget");
+
+    elm_object_scroll_freeze_push(desktop_scroller);
+}
+
+void drag_end(void)
+{
+    if (drag_status < 0) return;
+    int i;
+
+    for (i = 0; i < widgets[drag_status]->len; i++)
+        edje_object_signal_emit(g_ptr_array_index(widgets[drag_status], i), "drag_end", "widget");
+
+    elm_object_scroll_freeze_pop(desktop_scroller);
+
+    drag_status = -1;
 }
 
 static Evas_Object* prepare_table(Evas_Object* win, int cols, int rows)
@@ -287,6 +318,8 @@ Evas_Object* make_widgets(Evas_Object* win, Evas_Object* scroller)
 
     elm_box_pack_end(bx, mb);
     evas_object_show(mb);
+
+    desktop_scroller = scroller;
 
     #if 0
     struct widget_press_data* cb_data = g_new0(struct widget_press_data, 1);

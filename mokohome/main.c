@@ -37,6 +37,8 @@ static void _close(void* data, Evas_Object* obj, void* event_info)
 {
     // chiudi launcher
     edje_object_signal_emit((Evas_Object *) data, "collapse", "handle");
+
+    drag_end();
 }
 
 int main(int argc, char* argv[])
