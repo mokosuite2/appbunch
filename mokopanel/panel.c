@@ -54,6 +54,7 @@ static void free_notification(gpointer data)
     // cancella icona solo se tutte le notifiche di quel tipo sono andate
     int i;
     MokoPanel* panel = data2->panel;
+    gboolean update_only = TRUE;
 
     for (i = 0; i < panel->list->len; i++) {
         MokoNotification *no = g_ptr_array_index(panel->list, i);
@@ -64,10 +65,13 @@ static void free_notification(gpointer data)
     g_debug("Deleting notification icon %p for type '%s'", data2->icon, data2->type->name);
     evas_object_del(data2->icon);
 
-    // rimuovi dalla finestra delle notifiche
-    notification_window_remove(data2);
+    // cancella notifica in lista :)
+    update_only = FALSE;
 
 no_icon:
+    // rimuovi dalla finestra delle notifiche
+    notification_window_remove(data2, update_only);
+
     g_debug("Freeing notification %d", data2->sequence);
     g_free(data2->text);
     g_free(data2->subdescription);

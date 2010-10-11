@@ -24,7 +24,7 @@
 #include "panel.h"
 
 void notification_window_add(MokoNotification* n);
-void notification_window_remove(MokoNotification* n);
+void notification_window_remove(MokoNotification* n, gboolean update_only);
 
 void notify_window_init(MokoPanel* panel);
 

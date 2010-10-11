@@ -147,11 +147,19 @@ void notification_window_add(MokoNotification* n)
 
 /**
  * Rimuove una notifica dalla lista.
+ * @param n
+ * @param update_only
  */
-void notification_window_remove(MokoNotification* n)
+void notification_window_remove(MokoNotification* n, gboolean update_only)
 {
-    elm_genlist_item_del(n->item);
-    n->item = NULL;
+    if (update_only) {
+        elm_genlist_item_update(n->item);
+    }
+
+    else {
+        elm_genlist_item_del(n->item);
+        n->item = NULL;
+    }
 }
 
 void notify_window_init(MokoPanel* panel)
