@@ -237,7 +237,7 @@ static void call_query(GError* error, const char* path, gpointer userdata)
 
 static void missed_calls(GError* error, gint missed, gpointer data)
 {
-    if (missed <= 0) return;
+    if (error != NULL || missed <= 0) return;
 
     // crea query chiamate senza risposta :)
     query_data_t* cbdata = g_new0(query_data_t, 1);
@@ -394,7 +394,7 @@ static void message_query(GError* error, const char* path, gpointer userdata)
 
 static void unread_messages(GError* error, gint unread, gpointer data)
 {
-    if (unread <= 0) return;
+    if (error != NULL || unread <= 0) return;
 
     // crea query messaggi entranti non letti
     query_data_t* cbdata = g_new0(query_data_t, 1);

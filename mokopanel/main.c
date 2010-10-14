@@ -63,6 +63,7 @@ int main(int argc, char* argv[])
 
 #warning system_bus symbol not correctly exported, using workaround
     if (!system_bus) {
+        g_debug("!!!FIXME!!! System bus has not been initialized, creating our own");
         system_bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &e);
 
         if (e) {

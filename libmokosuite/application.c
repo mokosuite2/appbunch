@@ -40,8 +40,10 @@ gboolean moko_factory_init(int argc, char *argv[], const char *package, const ch
     g_debug("Creating system bus...");
     system_bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
     g_debug("system_bus=%p, error=%p", system_bus, error);
-    if (error)
+    if (error) {
         g_error("%d: %s", error->code, error->message);
+        g_error_free(error);
+    }
 
     return TRUE;
 }
