@@ -365,7 +365,7 @@ static void message_next(GError* error, GHashTable* row, gpointer userdata)
 static gboolean retry_message_query(gpointer userdata)
 {
     query_data_t* data = userdata;
-    opimd_calls_query(data->query, message_query, data);
+    opimd_messages_query(data->query, message_query, data);
     return FALSE;
 }
 
