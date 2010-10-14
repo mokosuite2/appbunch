@@ -235,9 +235,27 @@ static void call_query(GError* error, const char* path, gpointer userdata)
     opimd_callquery_get_result(data->path, call_next, data);
 }
 
+static void missed_calls(GError* error, gint missed, gpointer data);
+
+static gboolean retry_missed_calls(gpointer userdata)
+{
+    opimd_calls_get_new_missed_calls(missed_calls, userdata);
+    return FALSE;
+}
+
 static void missed_calls(GError* error, gint missed, gpointer data)
 {
-    if (error != NULL || missed <= 0) return;
+    if (error) {
+        g_debug("Missed calls error: (%d) %s", error->code, error->message);
+
+        // opimd non ancora caricato? Riprova in 5 secondi
+        if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE))
+            g_timeout_add_seconds(5, retry_missed_calls, data);
+
+        return;
+    }
+
+    if (missed <= 0) return;
 
     // crea query chiamate senza risposta :)
     query_data_t* cbdata = g_new0(query_data_t, 1);
@@ -392,9 +410,27 @@ static void message_query(GError* error, const char* path, gpointer userdata)
     opimd_messagequery_get_result(data->path, message_next, data);
 }
 
+static void unread_messages(GError* error, gint unread, gpointer data);
+
+static gboolean retry_unread_messages(gpointer userdata)
+{
+    opimd_messages_get_unread_messages(unread_messages, userdata);
+    return FALSE;
+}
+
 static void unread_messages(GError* error, gint unread, gpointer data)
 {
-    if (error != NULL || unread <= 0) return;
+    if (error) {
+        g_debug("Unread messages error: (%d) %s", error->code, error->message);
+
+        // opimd non ancora caricato? Riprova in 5 secondi
+        if (FREESMARTPHONE_GLIB_IS_DBUS_ERROR(error, FREESMARTPHONE_GLIB_DBUS_ERROR_SERVICE_NOT_AVAILABLE))
+            g_timeout_add_seconds(5, retry_unread_messages, data);
+
+        return;
+    }
+
+    if (unread <= 0) return;
 
     // crea query messaggi entranti non letti
     query_data_t* cbdata = g_new0(query_data_t, 1);
