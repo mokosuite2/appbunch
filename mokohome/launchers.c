@@ -88,7 +88,7 @@ Evas_Object* launcher_new(Evas_Object* parent, Efreet_Desktop* d)
 {
     Evas_Object *ic;
 
-    char* ic_path = efreet_icon_path_find(LAUNCHER_ICON_THEME, d->icon, LAUNCHER_ICON_SIZE);
+    const char* ic_path = efreet_icon_path_find(LAUNCHER_ICON_THEME, d->icon, LAUNCHER_ICON_SIZE);
     if (!ic_path && (d->icon != NULL ? d->icon[0] != '/' : TRUE)) return NULL;   // non aggiungere se l'icona non e' stata trovata
 
     ic = elm_icon_add(parent);
@@ -96,7 +96,6 @@ Evas_Object* launcher_new(Evas_Object* parent, Efreet_Desktop* d)
     gboolean is_edj = (ic_path == NULL && g_str_has_suffix(d->icon, ".edj"));
 
     elm_icon_file_set(ic, (ic_path == NULL) ? d->icon : ic_path, is_edj ? "icon" : NULL );
-    g_free(ic_path);
 
     elm_icon_smooth_set(ic, TRUE);
     elm_icon_scale_set(ic, TRUE, TRUE);
