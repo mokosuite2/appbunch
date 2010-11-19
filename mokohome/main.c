@@ -62,9 +62,10 @@ int main(int argc, char* argv[])
 
     elm_theme_overlay_add(NULL, "elm/scroller/base/desktop");
 
-    Evas_Object* win = elm_win_add(NULL, "mokohome", ELM_WIN_DESKTOP);
-    elm_win_title_set(win, "Home");
+    Evas_Object* win = elm_win_add(NULL, "mokohome", ELM_WIN_BASIC);
+    elm_win_title_set(win, "MokoHome");
     elm_win_borderless_set(win, TRUE);
+    elm_win_maximized_set(win, TRUE);
     //elm_win_layer_set(win, 90);    // home layer :)
 
     // for not accepting focus...
