@@ -45,9 +45,18 @@ int main(int argc, char* argv[])
 {
     moko_factory_init(argc, argv, PACKAGE, VERSION);
     elm_need_efreet();
+    Elm_Win_Type win_t = ELM_WIN_DESKTOP;
 
     Ecore_X_Window *roots = NULL;
     int num = 0;
+
+    int i;
+    for (i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-w")) {
+            win_t = ELM_WIN_BASIC;
+            break;
+        }
+    }
 
     roots = ecore_x_window_root_list(&num);
     if ((!roots) || (num <= 0)) {
@@ -57,12 +66,13 @@ int main(int argc, char* argv[])
 
     int x, y, w, h;
     ecore_x_window_geometry_get(roots[0], &x, &y, &w, &h);
+
     g_debug("w = %d, h = %d", w, h);
     g_free(roots);
 
     elm_theme_overlay_add(NULL, "elm/scroller/base/desktop");
 
-    Evas_Object* win = elm_win_add(NULL, "mokohome", ELM_WIN_BASIC);
+    Evas_Object* win = elm_win_add(NULL, "mokohome", win_t);
     elm_win_title_set(win, "MokoHome");
     elm_win_borderless_set(win, TRUE);
     elm_win_maximized_set(win, TRUE);
