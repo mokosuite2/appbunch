@@ -171,6 +171,5 @@ AC_OUTPUT([
   mokomessages/Makefile
   mokomail/Makefile
   mokopanel/Makefile
-  mokohome/Makefile
   mokosettings/Makefile
   tests/Makefile])

@@ -3158,7 +3158,6 @@ group { name: "elm/genlist/item/generic_sub/default";
 
 #include "phone.edc"
 #include "panel.edc"
-#include "home.edc"
 #include "idle.edc"
 #include "messages.edc"
 
