@@ -167,7 +167,6 @@ AC_OUTPUT([
   data/themes/gry/theme.edc
   data/themes/android/Makefile
   po/Makefile.in
-  mokomessages/Makefile
   mokomail/Makefile
   mokosettings/Makefile
   tests/Makefile])

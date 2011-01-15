@@ -1,4 +1,4 @@
-SUBDIRS = libmokosuite mokomessages mokomail mokosettings tests data po
+SUBDIRS = libmokosuite mokomail mokosettings tests data po
 
 MAINTAINERCLEANFILES = aclocal.m4 compile config.guess config.sub \
                        configure depcomp install-sh  \
