@@ -1,5 +1,14 @@
-INCLUDES = $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(ELM_CFLAGS) $(EGGDBUS_CFLAGS) \
-	-DLOCALEDIR=\""$(localedir)"\" -DDATADIR=\""$(datadir)"\" -DSYSCONFDIR=\""$(sysconfdir)"\" -Wall
+INCLUDES = \
+	$(GLIB_CFLAGS) \
+	$(DBUS_CFLAGS) \
+	$(ELM_CFLAGS) \
+	$(EVAS_CFLAGS) \
+	$(FSO_CFLAGS) \
+	$(EGGDBUS_CFLAGS) \
+	-DLOCALEDIR=\""$(localedir)"\" \
+	-DDATADIR=\""$(datadir)"\" \
+	-DSYSCONFDIR=\""$(sysconfdir)"\" \
+	-Wall
 
 bin_PROGRAMS = mokosettings
 
@@ -19,6 +28,10 @@ mokosettings_SOURCES = \
 	menu-sounds.h
 
 mokosettings_LDADD = \
+	$(ELM_LIBS) \
+	$(EVAS_LIBS) \
+	$(FSO_LIBS) \
+	$(EGGDBUS_LIBS) \
 	-L../libmokosuite -lmokosuite
 
 MAINTAINERCLEANFILES = \
