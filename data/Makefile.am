@@ -19,9 +19,7 @@ configdir = $(sysconfdir)
 config_DATA = mokosuite.conf
 
 desktopdir = $(datadir)/applications
-desktop_DATA = mokophone-phone.desktop mokosettings.desktop
-
-bin_SCRIPTS = mokophone-activate.sh
+desktop_DATA = mokosettings.desktop
 
 EXTRA_DIST = $(files_DATA) $(dbus_DATA) \
 	$(config_DATA) $(desktop_DATA)
